@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPositions } from "@/lib/polymarket/positions";
-import { buildHedgeSuggestions } from "@/lib/polymarket/hedge";
+import { buildHedgeSuggestions, analyzePortfolio } from "@/lib/polymarket/hedge";
 
 /**
  * GET /api/hedge?address=0x...
@@ -19,11 +19,13 @@ export async function GET(req: Request) {
   try {
     const positions = await getPositions(address);
     const suggestions = await buildHedgeSuggestions(positions);
+    const portfolio = analyzePortfolio(positions);
     return NextResponse.json({
       address,
       count: positions.length,
       positions,
       suggestions,
+      portfolio,
     });
   } catch (err) {
     return NextResponse.json(

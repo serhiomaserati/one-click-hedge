@@ -37,6 +37,10 @@ yarn-error.log*
 # local design assets (not part of the app)
 /_assets
 
+# dev server log + personal local Claude settings
+dev.log
+/.claude/settings.local.json
+
 # vercel
 .vercel
 
