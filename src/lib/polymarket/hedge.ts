@@ -32,6 +32,62 @@ export interface HedgeSuggestion {
   lockedPnl: number;
   /** True if the opposite ask is live; false means we fell back to 1 − curPrice. */
   livePrice: boolean;
+  /** True if the portfolio already holds the opposite side (this market is hedged). */
+  alreadyHedged: boolean;
+}
+
+/** Portfolio-level, cross-position insight derived from all open positions. */
+export interface PortfolioInsight {
+  totalValue: number;
+  eventCount: number;
+  /** How many markets are already hedged (both sides held). */
+  alreadyHedgedCount: number;
+  /** The single event with the largest exposure (concentration risk). */
+  topEvent?: {
+    title: string;
+    value: number;
+    /** Share of total portfolio value (0–1). */
+    share: number;
+    positions: number;
+  };
+}
+
+/** Cross-position analysis: event grouping, concentration, already-hedged. */
+export function analyzePortfolio(positions: Position[]): PortfolioInsight {
+  const totalValue = positions.reduce((a, p) => a + p.currentValue, 0);
+
+  const byEvent = new Map<string, { title: string; value: number; positions: number }>();
+  for (const p of positions) {
+    const key = p.eventSlug || p.slug || p.conditionId;
+    const g = byEvent.get(key) ?? { title: p.title, value: 0, positions: 0 };
+    g.value += p.currentValue;
+    g.positions += 1;
+    byEvent.set(key, g);
+  }
+
+  let top: { title: string; value: number; positions: number } | undefined;
+  for (const g of byEvent.values()) {
+    if (!top || g.value > top.value) top = { title: g.title, value: g.value, positions: g.positions };
+  }
+
+  const held = new Set(positions.map((p) => p.asset));
+  const counted = new Set<string>();
+  let alreadyHedgedCount = 0;
+  for (const p of positions) {
+    if (p.oppositeAsset && held.has(p.oppositeAsset) && !counted.has(p.conditionId)) {
+      alreadyHedgedCount += 1;
+      counted.add(p.conditionId);
+    }
+  }
+
+  return {
+    totalValue,
+    eventCount: byEvent.size,
+    alreadyHedgedCount,
+    topEvent: top
+      ? { ...top, share: totalValue > 0 ? top.value / totalValue : 0 }
+      : undefined,
+  };
 }
 
 /** Read the live BUY price for a token, falling back to (1 − curPrice). */
@@ -50,6 +106,7 @@ async function getHedgePrice(tokenId: string, curPrice: number): Promise<{ price
 
 /** Build hedge suggestions for a set of positions, biggest risk first. */
 export async function buildHedgeSuggestions(positions: Position[]): Promise<HedgeSuggestion[]> {
+  const heldAssets = new Set(positions.map((p) => p.asset));
   const suggestions = await Promise.all(
     positions
       .filter((p) => p.oppositeAsset && p.size > 0)
@@ -71,6 +128,7 @@ export async function buildHedgeSuggestions(positions: Position[]): Promise<Hedg
           // SHARE count, not dollars — do not use it here.
           lockedPnl: lockedValue - (p.initialValue + hedgeCost),
           livePrice: live,
+          alreadyHedged: heldAssets.has(p.oppositeAsset),
         };
       })
   );

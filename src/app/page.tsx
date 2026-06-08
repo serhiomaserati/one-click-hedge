@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { placeHedgeFromBrowser } from "@/lib/polymarket/client-order";
 
@@ -28,13 +28,27 @@ interface HedgeSuggestion {
   lockedValue: number;
   lockedPnl: number;
   livePrice: boolean;
+  alreadyHedged: boolean;
+}
+
+interface PortfolioInsight {
+  totalValue: number;
+  eventCount: number;
+  alreadyHedgedCount: number;
+  topEvent?: { title: string; value: number; share: number; positions: number };
 }
 
 type State =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "loaded"; address: string; positions: Position[]; suggestions: HedgeSuggestion[] };
+  | {
+      status: "loaded";
+      address: string;
+      positions: Position[];
+      suggestions: HedgeSuggestion[];
+      portfolio: PortfolioInsight;
+    };
 
 interface Advice {
   headline: string;
@@ -59,9 +73,19 @@ export default function Home() {
   const [address, setAddress] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
   const [advice, setAdvice] = useState<AdviceState>({ status: "hidden" });
+  const { address: connectedAddress } = useAccount();
 
-  async function load() {
-    const addr = address.trim();
+  // Connecting a wallet auto-loads that wallet's portfolio.
+  useEffect(() => {
+    if (connectedAddress) {
+      setAddress(connectedAddress);
+      load(connectedAddress);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectedAddress]);
+
+  async function load(addrArg?: string) {
+    const addr = (addrArg ?? address).trim();
     if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
       setState({ status: "error", message: "Enter a valid wallet address (0x… 40 hex chars)." });
       return;
@@ -72,7 +96,13 @@ export default function Home() {
       const res = await fetch(`/api/hedge?address=${addr}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load");
-      setState({ status: "loaded", address: addr, positions: json.positions, suggestions: json.suggestions });
+      setState({
+        status: "loaded",
+        address: addr,
+        positions: json.positions,
+        suggestions: json.suggestions,
+        portfolio: json.portfolio,
+      });
       if (json.positions.length > 0) loadAdvice(addr);
     } catch (err) {
       setState({ status: "error", message: err instanceof Error ? err.message : String(err) });
@@ -131,7 +161,7 @@ export default function Home() {
               className="flex-1 rounded-xl border border-black/10 bg-white px-4 py-3 font-mono text-sm shadow-sm outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-zinc-900"
             />
             <button
-              onClick={load}
+              onClick={() => load()}
               disabled={state.status === "loading"}
               className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
             >
@@ -189,6 +219,10 @@ export default function Home() {
               accent={totalPnl >= 0 ? "emerald" : "red"}
             />
           </div>
+
+          {state.portfolio && state.positions.length > 0 && (
+            <PortfolioCard p={state.portfolio} />
+          )}
 
           {state.positions.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-black/10 bg-white py-16 text-center dark:border-white/10 dark:bg-zinc-900">
@@ -315,6 +349,43 @@ function AdvicePanel({ advice }: { advice: AdviceState }) {
   );
 }
 
+function PortfolioCard({ p }: { p: PortfolioInsight }) {
+  return (
+    <div className="rounded-2xl border border-black/5 bg-white p-5 dark:border-white/10 dark:bg-zinc-900">
+      <h2 className="text-base font-semibold">Portfolio insights</h2>
+      <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Spread across</p>
+          <p className="mt-0.5 font-medium">
+            {p.eventCount} event{p.eventCount === 1 ? "" : "s"}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Already hedged</p>
+          <p className="mt-0.5 font-medium">
+            {p.alreadyHedgedCount} market{p.alreadyHedgedCount === 1 ? "" : "s"}
+          </p>
+        </div>
+        {p.topEvent && (
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wide text-zinc-400">
+              Biggest concentration
+            </p>
+            <p className="mt-0.5 truncate font-medium" title={p.topEvent.title}>
+              {Math.round(p.topEvent.share * 100)}% · {p.topEvent.title}
+            </p>
+          </div>
+        )}
+      </div>
+      {p.topEvent && p.topEvent.share > 0.5 && (
+        <p className="mt-3 text-sm text-amber-600">
+          ⚠ Over half your value sits in one event — concentrated risk worth hedging.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Stat({
   label,
   value,
@@ -391,6 +462,11 @@ function HedgeCard({ s }: { s: HedgeSuggestion }) {
               </span>{" "}
               · risk{" "}
               <span className="font-medium text-amber-600">{usd(s.downsideRisk)}</span>
+              {s.alreadyHedged && (
+                <span className="ml-2 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  already hedged
+                </span>
+              )}
             </p>
           </div>
         </div>
