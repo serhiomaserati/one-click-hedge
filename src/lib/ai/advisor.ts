@@ -68,6 +68,8 @@ export async function getPortfolioAdvice(
     hedge: `buy ${Math.round(s.hedgeSize)} ${s.hedgeOutcome} @ ${(s.hedgePrice * 100).toFixed(0)}c`,
     hedgeCostUsd: Math.round(s.hedgeCost * 100) / 100,
     locksInUsd: Math.round(s.lockedPnl * 100) / 100,
+    locksInPct: Math.round(s.lockedPnlPct * 1000) / 10,
+    worthHedgingNow: s.worthHedging,
   }));
   const totalValue = positions.reduce((a, p) => a + p.currentValue, 0);
 
