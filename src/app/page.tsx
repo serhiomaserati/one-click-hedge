@@ -335,7 +335,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
   const [market, setMarket] = useState<ResolvedMarket | null>(null);
   const [err, setErr] = useState("");
   const [pick, setPick] = useState(0);
-  const [amount, setAmount] = useState("2");
+  const [amount, setAmount] = useState("5");
   const [order, setOrder] = useState<OrderState>({ status: "idle" });
 
   async function loadMarket() {
@@ -365,6 +365,9 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
     token && limitPrice > 0 && usdAmount > 0
       ? Math.round((usdAmount / limitPrice) * 100) / 100
       : 0;
+  // Polymarket rejects orders below 5 shares.
+  const MIN_SHARES = 5;
+  const minCost = limitPrice > 0 ? Math.ceil(MIN_SHARES * limitPrice * 100) / 100 : 0;
 
   async function buy() {
     if (!token || !isConnected || !walletClient || !address) return;
@@ -503,7 +506,9 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
                     ? "This market isn’t accepting orders."
                     : shares <= 0
                       ? "Enter an amount in USDC."
-                      : "";
+                      : shares < MIN_SHARES
+                        ? `Minimum order is ${MIN_SHARES} shares — increase to ~${usd(minCost)}.`
+                        : "";
               return (
                 <>
                   <button
@@ -751,7 +756,12 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
         </div>
         <button
           onClick={hedge}
-          disabled={!isConnected || order.status === "placing" || order.status === "done"}
+          disabled={
+            !isConnected ||
+            order.status === "placing" ||
+            order.status === "done" ||
+            s.hedgeSize < 5
+          }
           title={isConnected ? "Place this hedge" : "Connect your wallet first"}
           className="shrink-0 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-600/40"
         >
@@ -761,7 +771,9 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
               ? "Hedged ✓"
               : !isConnected
                 ? "Connect to hedge"
-                : "Hedge"}
+                : s.hedgeSize < 5
+                  ? "Too small"
+                  : "Hedge"}
         </button>
       </div>
 
@@ -779,6 +791,11 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
         />
       </div>
 
+      {order.status === "idle" && s.hedgeSize < 5 && (
+        <p className="mt-3 text-sm text-zinc-500">
+          Position too small to hedge — Polymarket’s minimum order is 5 shares.
+        </p>
+      )}
       {order.status === "done" && (
         <p className="mt-3 text-sm font-medium text-emerald-600">
           ✓ Hedge order placed{order.orderID ? ` (${order.orderID.slice(0, 10)}…)` : ""}.
