@@ -88,7 +88,7 @@ function usd(n: number) {
 // so anyone (e.g. a grant reviewer) can see the product work without funds.
 const DEMO_ADDRESS = "0xce25e214d5cfe4f459cf67f08df581885aae7fdc";
 
-const SITE_URL = "https://one-click-hedge.vercel.app";
+const SITE_URL = "https://hedgehub.app";
 
 /** Open an X (Twitter) compose intent prefilled with a hedge result. */
 function shareWin(text: string) {

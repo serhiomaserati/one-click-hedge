@@ -5,7 +5,7 @@ reads your whole book, prices the other side of every position live, and shows
 you exactly what a hedge locks in — then lets you **hedge or take profit in one
 click**. Built natively on **CLOB V2** for the [Polymarket Builders Program](https://builders.polymarket.com).
 
-🔗 **Live:** https://one-click-hedge.vercel.app
+🔗 **Live:** https://hedgehub.app
 
 ---
 

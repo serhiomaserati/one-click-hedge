@@ -4,10 +4,10 @@
 the other side of every position live, and lets you **hedge or take profit in one
 click** — with a Claude risk read on top.
 
-- **Live:** https://one-click-hedge.vercel.app
+- **Live:** https://hedgehub.app
 - **Try it instantly:** the landing page has a **"Try it with a live demo wallet"**
   button — no funds or connection needed to see it work.
-- **Builder attribution:** https://one-click-hedge.vercel.app/builder
+- **Builder attribution:** https://hedgehub.app/builder
 
 ---
 
