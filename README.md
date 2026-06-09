@@ -1,69 +1,91 @@
 # One-Click Hedge
 
-Hedge any Polymarket position in one click. Built for the **Polymarket Builders Program** on **CLOB V2**.
+**An AI risk co-pilot for Polymarket.** Connect your wallet and One-Click Hedge
+reads your whole book, prices the other side of every position live, and shows
+you exactly what a hedge locks in — then lets you **hedge or take profit in one
+click**. Built natively on **CLOB V2** for the [Polymarket Builders Program](https://builders.polymarket.com).
 
-One-Click Hedge reads a trader's open Polymarket positions, finds the opposing
-side of every market at the live order-book price, and lets them lock in their
-risk with a single click — with an AI risk read from Claude on top.
+🔗 **Live:** https://one-click-hedge.vercel.app
+
+---
+
+## Why it exists
+
+Polymarket gives you the order types. It doesn't tell you *what to do with them*.
+Across a dozen positions, knowing which bets are ripe to lock in — and how much
+you'd secure — is tedious manual math, so most traders never do it and miss the
+moment.
+
+One-Click Hedge is the decision layer on top: it watches your book and tells you
+**what, when, and how much** to hedge, with the math already done.
+
+## What it does
+
+- **Reads your book** — connect (email or wallet via Privy); we auto-resolve your
+  Polymarket proxy and load every open position + your USDC cash.
+- **Prices the hedge live** — for each position we price the opposite outcome from
+  the live order book; holding both sides pays out at resolution, neutralizing
+  directional risk.
+- **Shows the lock-in** — per position: the guaranteed P/L in **$ and %**, a
+  partial-hedge **slider** (hedge 25–100%, keep some upside) with the outcome under
+  each scenario, and a *"good time to hedge"* verdict (green = locks in a profit now).
+- **One click to act** — **Hedge** (buy the opposite) or **Take profit** (sell out),
+  signed by your own wallet, attributed to our builder code on-chain.
+- **Alerts** — a banner + opt-in browser notifications when a position ripens into a
+  profitable hedge. Prices auto-refresh every 20s.
+- **AI risk read** — Claude (Opus 4.8) reads the whole portfolio and explains the
+  risk in plain language, flagging the hedges that matter most.
 
 ## How it works
 
 ```
-Wallet address ──▶ Data API ──▶ open positions
-                                     │
-                                     ▼
-            For each position, price the opposite outcome
-            from the live CLOB order book (the hedge leg)
-                                     │
-                    ┌────────────────┼────────────────┐
-                    ▼                ▼                ▼
-           Risk + locked-in   Claude AI risk    One-click Hedge
-            P/L per position     analysis        (browser-signed)
+Connect ─▶ resolve Polymarket proxy ─▶ load open positions + cash
+                                              │
+                  ┌───────────────────────────┼───────────────────────────┐
+                  ▼                           ▼                           ▼
+        price opposite side          Claude reads the book        partial-hedge slider
+        (live order book)            (plain-language risk)        + per-outcome P/L
+                  │
+                  ▼
+        Hedge / Take profit  ──▶  user's wallet signs (client-side)  ──▶  CLOB V2
+                                   builder code attached on-chain (your fees)
 ```
 
-- **Read** — open positions come from the public Polymarket Data API (no auth).
-- **Match** — for each position we price `size` shares of the opposite outcome
-  from the live order book; holding both sides pays `size` dollars at
-  resolution, neutralizing directional risk.
-- **Analyze** — Claude (Opus) explains the portfolio's risk in plain language and
-  ranks the hedges that remove the most risk per dollar.
-- **Hedge** — the user's own wallet signs and submits the order **client-side**
-  (so Polymarket's geoblock applies per-user). Builder-fee attribution is signed
-  **server-side** so the builder secret never reaches the browser.
+## Built on CLOB V2 (native, non-custodial)
 
-## Architecture
+- **Orders are signed client-side** by the user's own wallet, so Polymarket's
+  geoblock applies per-user and we never custody keys.
+- **Builder attribution is native to V2** — the public `builderCode` (bytes32) is
+  written directly into each order's `builder` field. No HMAC header dance, no
+  smart contract.
+- **Collateral is pUSD** (V2's USDC-backed token); cash balance is read on-chain.
 
-| Piece | Where | Why |
-|---|---|---|
-| Portfolio + hedge math | server (`/api/hedge`) | public data, fast |
-| AI risk advisor | server (`/api/advisor`) | keeps the Anthropic key server-side |
-| Order signing + submit | **browser** (user's wallet) | per-user geoblock, no key custody |
-| Builder-fee headers | server (`/api/builder/sign`) | keeps the builder secret off the client |
-
-Non-custodial: we never hold user keys. Built natively on CLOB **V2** (the
-`bytes32 builder` attribution model), no smart contract required.
+**Verified live:** real buy + take-profit orders filled on production, and the
+trades show up attributed to our builder code via `getBuilderTrades`.
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind · wagmi/viem ·
-`@polymarket/clob-client` · `@polymarket/builder-signing-sdk` · Anthropic SDK.
+Next.js 16 (App Router) · TypeScript · Tailwind · wagmi/viem · Privy
+(email + wallet auth) · `@polymarket/clob-client-v2` ·
+`@polymarket/builder-relayer-client` (proxy derivation) · Anthropic SDK (Claude).
 
 ## Local development
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in the values
+cp .env.example .env.local   # fill in the values
 npm run dev                  # http://localhost:3000
 ```
 
 ### Environment
 
-See `.env.example`. Secrets live in `.env.local` (gitignored):
+Secrets live in `.env.local` (gitignored). The only thing the **browser** needs
+is the public builder code (`NEXT_PUBLIC_BUILDER_CODE`); the Anthropic key and
+all server config stay server-side.
 
-- `BUILDER_CODE`, `BUILDER_API_ADDRESS` — public builder identifiers
-- `BUILDER_API_KEY` / `SECRET` / `PASSPHRASE` — builder fee attribution (server only)
-- `ANTHROPIC_API_KEY` — enables the AI advisor (optional; panel hides without it)
-- `BUILDER_FEE_BPS` — builder fee in basis points (default 15 = 0.15%)
+- `NEXT_PUBLIC_BUILDER_CODE` — public bytes32 attribution id (also hardcoded as a fallback)
+- `ANTHROPIC_API_KEY` — enables the Claude risk advisor (server-side; panel hides without it)
+- `NEXT_PUBLIC_PRIVY_APP_ID` — Privy app id for email/wallet login
 
-`scripts/` holds dev-only helpers (`check-wallet`, `verify-auth`, `approve`,
-`test-order`) for validating the trading pipeline.
+Orders are placed by the user's own wallet in the browser — there is **no**
+server-side trading key in production.

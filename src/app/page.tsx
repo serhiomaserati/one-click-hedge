@@ -79,8 +79,13 @@ type AdviceState =
   | { status: "done"; advice: Advice };
 
 function usd(n: number) {
+  if (!Number.isFinite(n)) n = 0;
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
+
+// A real Polymarket wallet with live positions — powers the "Try a demo" button
+// so anyone (e.g. a grant reviewer) can see the product work without funds.
+const DEMO_ADDRESS = "0xce25e214d5cfe4f459cf67f08df581885aae7fdc";
 
 const SITE_URL = "https://one-click-hedge.vercel.app";
 
@@ -155,6 +160,9 @@ export default function Home() {
         }
         if (j.fundedKind === "proxy") {
           return setTradeId({ funder: j.funded, signatureType: SignatureTypeV2.POLY_PROXY });
+        }
+        if (j.fundedKind === "eoa") {
+          return setTradeId({ funder: j.funded, signatureType: SignatureTypeV2.EOA });
         }
         // No positions yet — best-effort guess by wallet type.
         setTradeId(
@@ -326,6 +334,18 @@ export default function Home() {
           {state.status === "error" && (
             <p className="mt-3 text-sm font-medium text-red-600">{state.message}</p>
           )}
+          <p className="mt-3 text-sm text-zinc-500">
+            No Polymarket wallet handy?{" "}
+            <button
+              onClick={() => {
+                setAddress(DEMO_ADDRESS);
+                load(DEMO_ADDRESS);
+              }}
+              className="font-medium text-emerald-600 underline-offset-2 hover:underline"
+            >
+              Try it with a live demo wallet →
+            </button>
+          </p>
 
           {/* How it works + example (only before results) */}
           {state.status !== "loaded" && (
@@ -410,7 +430,7 @@ export default function Home() {
           <AdvicePanel advice={advice} />
 
           <div className="grid grid-cols-2 divide-x divide-y divide-black/[0.06] border-y border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.06] sm:grid-cols-4 sm:divide-y-0">
-            <Stat label="Cash · pUSD" value={usd(state.cash)} />
+            <Stat label="Cash · USDC" value={usd(state.cash)} />
             <Stat label="Portfolio value" value={usd(totalValue)} />
             <Stat
               label="Lockable now"
@@ -547,12 +567,12 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Open a position</h2>
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-            via your builder code
+            live prices
           </span>
         </div>
         <p className="mt-1 text-sm text-zinc-500">
-          Buy any market through One-Click Hedge — then hedge it below. Every order
-          routes through your builder code.
+          Buy into any market right here — then hedge or take profit in the same place,
+          at live order-book prices.
         </p>
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -746,8 +766,8 @@ function AdvicePanel({ advice }: { advice: AdviceState }) {
 
       {advice.status === "off" && (
         <p className="text-sm text-zinc-500">
-          Add an <code className="font-mono text-xs">ANTHROPIC_API_KEY</code> to{" "}
-          <code className="font-mono text-xs">.env.local</code> to turn on the AI advisor.
+          AI analysis is taking a short break — your hedge numbers below are live and
+          unaffected.
         </p>
       )}
 
@@ -836,9 +856,12 @@ function PortfolioCard({ p }: { p: PortfolioInsight }) {
           </div>
         )}
       </div>
-      {p.topEvent && p.topEvent.share > 0.5 && (
-        <p className="mt-3 text-sm text-amber-600">
-          ⚠ Over half your value sits in one event — concentrated risk worth hedging.
+      {p.topEvent && (
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+          If <span className="font-medium">{p.topEvent.title}</span> resolves against you,
+          you’d lose{" "}
+          <span className="font-semibold text-amber-600">{usd(p.topEvent.value)}</span>
+          {p.topEvent.share > 0.5 ? " — over half your book. Worth hedging." : "."}
         </p>
       )}
     </div>
