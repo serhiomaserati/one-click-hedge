@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { useWallets } from "@privy-io/react-auth";
+import { useWallets, usePrivy } from "@privy-io/react-auth";
 import { SignatureTypeV2 } from "@polymarket/clob-client-v2";
 import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
 import { recordTrade, getSecuredSummary, TRADE_EVENT } from "@/lib/track";
@@ -130,6 +130,7 @@ export default function Home() {
     return () => window.removeEventListener(TRADE_EVENT, refresh);
   }, []);
   const { address: connectedAddress } = useAccount();
+  const { authenticated, login } = usePrivy();
   const { wallets } = useWallets();
   const isEmbedded =
     wallets.find((w) => w.address?.toLowerCase() === connectedAddress?.toLowerCase())
@@ -343,7 +344,21 @@ export default function Home() {
             <p className="mt-3 text-sm font-medium text-red-600">{state.message}</p>
           )}
           <p className="mt-3 text-sm text-zinc-500">
-            No Polymarket wallet handy?{" "}
+            {!authenticated && (
+              <>
+                <button
+                  onClick={() => {
+                    track("hero_signin");
+                    login();
+                  }}
+                  className="font-medium text-emerald-600 underline-offset-2 hover:underline"
+                >
+                  Sign in with email or wallet
+                </button>
+                <span className="mx-2 text-zinc-300 dark:text-zinc-600">·</span>
+              </>
+            )}
+            No wallet handy?{" "}
             <button
               onClick={() => {
                 track("demo_clicked");
@@ -352,7 +367,7 @@ export default function Home() {
               }}
               className="font-medium text-emerald-600 underline-offset-2 hover:underline"
             >
-              Try it with a live demo wallet →
+              Try a live demo →
             </button>
           </p>
 
