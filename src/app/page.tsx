@@ -279,50 +279,46 @@ export default function Home() {
   }, [state, notify]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6">
+    <div className="mx-auto w-full max-w-4xl px-6">
       {/* Hero */}
-      <section className="relative overflow-hidden py-16 sm:py-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/10"
-        />
-        <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-600/20 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Polymarket Builders Program
-          </span>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-            Hedge any Polymarket position in{" "}
-            <span className="text-emerald-600">one click</span>
+      <section className="py-20 sm:py-28">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+            Risk co-pilot for Polymarket
+          </p>
+          <h1 className="mt-5 text-balance text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+            Lock in your Polymarket{" "}
+            <span className="text-emerald-600">profits.</span>
           </h1>
-          <p className="mt-5 text-balance text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Lock in profit on a winning bet — or cap losses on a losing one — without
-            waiting for the market to resolve. We price the other side live and show
-            you exactly what each hedge locks in.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-500 dark:text-zinc-400">
+            We read your whole book, price the other side of every position live, and
+            show you exactly what a hedge locks in — one click, no math, no waiting for
+            the market to resolve.
           </p>
 
           {secured.count > 0 && (
-            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-              🔒 You’ve secured{" "}
-              <span className="font-semibold">{usd(secured.secured)}</span> across{" "}
-              {secured.count} trade{secured.count === 1 ? "" : "s"} here
+            <p className="mt-6 inline-flex items-center gap-2 text-sm text-zinc-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              You’ve secured{" "}
+              <span className="font-medium text-emerald-600">{usd(secured.secured)}</span>{" "}
+              across {secured.count} trade{secured.count === 1 ? "" : "s"} here
             </p>
           )}
 
           {/* Analyzer */}
-          <div className="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row">
+          <div className="mt-9 flex w-full max-w-lg flex-col gap-2.5 sm:flex-row">
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && load()}
               placeholder="Paste a wallet address  0x…"
               spellCheck={false}
-              className="flex-1 rounded-xl border border-black/10 bg-white px-4 py-3 font-mono text-sm shadow-sm outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-zinc-900"
+              className="flex-1 rounded-lg border border-black/10 bg-white px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-zinc-400 dark:border-white/15 dark:bg-zinc-900 dark:focus:border-zinc-500"
             />
             <button
               onClick={() => load()}
               disabled={state.status === "loading"}
-              className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
             >
               {state.status === "loading" ? "Analyzing…" : "Analyze"}
             </button>
@@ -333,35 +329,31 @@ export default function Home() {
 
           {/* How it works + example (only before results) */}
           {state.status !== "loaded" && (
-            <>
-              <div className="mt-12 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-16 max-w-2xl border-t border-black/[0.07] pt-10 dark:border-white/[0.07]">
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
                 {[
-                  ["1 · Connect", "Sign in and we load your Polymarket positions automatically."],
-                  ["2 · See the lock-in", "Each position is priced against its live opposite — with your guaranteed P/L."],
-                  ["3 · Hedge in one click", "Pick how much to hedge with a slider and lock it in. No math, no waiting."],
-                ].map(([t, d]) => (
-                  <div
-                    key={t}
-                    className="rounded-xl border border-black/5 bg-white p-4 text-left dark:border-white/10 dark:bg-zinc-900"
-                  >
-                    <p className="text-sm font-semibold text-emerald-600">{t}</p>
-                    <p className="mt-1 text-sm text-zinc-500">{d}</p>
+                  ["01", "Connect", "We load your Polymarket positions automatically."],
+                  ["02", "See the lock-in", "Every position priced against its live opposite — with your guaranteed P/L."],
+                  ["03", "Hedge in one click", "Slide how much to hedge and lock it in. No math, no waiting."],
+                ].map(([n, t, d]) => (
+                  <div key={n}>
+                    <p className="font-mono text-xs text-emerald-600">{n}</p>
+                    <p className="mt-2 text-sm font-semibold">{t}</p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-500">{d}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 w-full rounded-xl border border-emerald-500/20 bg-emerald-50/60 p-4 text-left text-sm leading-6 text-zinc-600 dark:border-emerald-500/15 dark:bg-emerald-950/20 dark:text-zinc-300">
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+              <p className="mt-10 max-w-xl text-sm leading-7 text-zinc-500">
+                <span className="font-medium text-zinc-700 dark:text-zinc-300">
                   Why hedge?
                 </span>{" "}
-                You bought a team at 67¢ and it climbed to 88¢. Instead of risking a
-                comeback, you buy the other side for 12¢ — locking in{" "}
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                  +31%
-                </span>{" "}
-                no matter who wins. We spot these moments for you.
-              </div>
-            </>
+                You bought a team at 67¢; it climbed to 88¢. Rather than risk a comeback,
+                you buy the other side for 12¢ — locking in{" "}
+                <span className="font-medium text-emerald-600">+31%</span> no matter who
+                wins. We spot these moments across your whole book for you.
+              </p>
+            </div>
           )}
         </div>
       </section>
@@ -375,7 +367,7 @@ export default function Home() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-2xl border border-black/5 bg-white dark:border-white/10 dark:bg-zinc-900"
+              className="h-28 animate-pulse rounded-2xl border border-black/[0.06] bg-zinc-50 dark:border-white/[0.06] dark:bg-zinc-900"
             />
           ))}
         </section>
@@ -417,7 +409,7 @@ export default function Home() {
 
           <AdvicePanel advice={advice} />
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 divide-x divide-y divide-black/[0.06] border-y border-black/[0.06] dark:divide-white/[0.06] dark:border-white/[0.06] sm:grid-cols-4 sm:divide-y-0">
             <Stat label="Cash · pUSD" value={usd(state.cash)} />
             <Stat label="Portfolio value" value={usd(totalValue)} />
             <Stat
@@ -426,7 +418,7 @@ export default function Home() {
               accent={totalLockable > 0 ? "emerald" : undefined}
             />
             <Stat
-              label="Unrealized PnL"
+              label="Unrealized P/L"
               value={`${totalPnl >= 0 ? "+" : ""}${usd(totalPnl)}`}
               accent={totalPnl >= 0 ? "emerald" : "red"}
             />
@@ -551,7 +543,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
 
   return (
     <section className="pb-8">
-      <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+      <div className="rounded-2xl border border-black/[0.07] bg-white p-5 dark:border-white/[0.07] dark:bg-zinc-900">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Open a position</h2>
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
@@ -818,7 +810,7 @@ function AdvicePanel({ advice }: { advice: AdviceState }) {
 
 function PortfolioCard({ p }: { p: PortfolioInsight }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-5 dark:border-white/10 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-black/[0.07] bg-white p-5 dark:border-white/[0.07] dark:bg-zinc-900">
       <h2 className="text-base font-semibold">Portfolio insights</h2>
       <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
         <div>
@@ -869,11 +861,13 @@ function Stat({
         ? "text-red-600"
         : accent === "emerald"
           ? "text-emerald-600"
-          : "";
+          : "text-zinc-900 dark:text-zinc-100";
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-4 dark:border-white/10 dark:bg-zinc-900">
-      <p className="text-xs uppercase tracking-wide text-zinc-400">{label}</p>
-      <p className={`mt-1 font-mono text-xl font-semibold ${color}`}>{value}</p>
+    <div className="px-5 py-5">
+      <p className="text-[11px] uppercase tracking-wider text-zinc-400">{label}</p>
+      <p className={`mt-1.5 font-mono text-2xl font-semibold tracking-tight ${color}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -960,7 +954,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
   }
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-black/[0.07] bg-white p-5 transition-colors hover:border-black/15 dark:border-white/[0.07] dark:bg-zinc-900 dark:hover:border-white/20">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           {p.icon ? (
