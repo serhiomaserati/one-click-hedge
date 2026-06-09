@@ -30,6 +30,10 @@ export interface HedgeSuggestion {
   lockedValue: number;
   /** Locked P/L once hedged ≈ lockedValue − (already spent + hedge cost). */
   lockedPnl: number;
+  /** Locked P/L as a % return on what you put in (lockedPnl / initialValue). */
+  lockedPnlPct: number;
+  /** True if hedging now locks in a positive result (good time to hedge). */
+  worthHedging: boolean;
   /** True if the opposite ask is live; false means we fell back to 1 − curPrice. */
   livePrice: boolean;
   /** True if the portfolio already holds the opposite side (this market is hedged). */
@@ -115,6 +119,9 @@ export async function buildHedgeSuggestions(positions: Position[]): Promise<Hedg
         const hedgeSize = p.size;
         const hedgeCost = hedgeSize * price;
         const lockedValue = hedgeSize; // one side pays $1 per share at resolution
+        // Dollars in = initialValue (= size × avgPrice). NOTE: totalBought is a
+        // SHARE count, not dollars — do not use it here.
+        const lockedPnl = lockedValue - (p.initialValue + hedgeCost);
         return {
           position: p,
           downsideRisk: p.currentValue,
@@ -124,9 +131,9 @@ export async function buildHedgeSuggestions(positions: Position[]): Promise<Hedg
           hedgeSize,
           hedgeCost,
           lockedValue,
-          // Dollars in = initialValue (= size × avgPrice). NOTE: totalBought is a
-          // SHARE count, not dollars — do not use it here.
-          lockedPnl: lockedValue - (p.initialValue + hedgeCost),
+          lockedPnl,
+          lockedPnlPct: p.initialValue > 0 ? lockedPnl / p.initialValue : 0,
+          worthHedging: lockedPnl > 0,
           livePrice: live,
           alreadyHedged: heldAssets.has(p.oppositeAsset),
         };
