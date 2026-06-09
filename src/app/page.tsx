@@ -200,6 +200,48 @@ export default function Home() {
   const totalPnl =
     state.status === "loaded" ? state.positions.reduce((s, p) => s + p.cashPnl, 0) : 0;
 
+  // "Ripe" hedges: positions where a full hedge now locks in a profit.
+  const ripe =
+    state.status === "loaded"
+      ? state.suggestions.filter((s) => s.worthHedging && !s.alreadyHedged && s.hedgeSize >= 5)
+      : [];
+  const totalLockable = ripe.reduce((a, s) => a + s.lockedPnl, 0);
+
+  // Optional browser notifications when a NEW position ripens into a green hedge.
+  const [notify, setNotify] = useState(false);
+  const notifiedRef = useRef<Set<string>>(new Set());
+
+  async function enableNotify() {
+    if (typeof Notification === "undefined") return;
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return;
+    // Seed with what's already ripe so the user isn't blasted on enable.
+    notifiedRef.current = new Set(ripe.map((s) => s.position.asset));
+    setNotify(true);
+  }
+
+  useEffect(() => {
+    if (!notify || state.status !== "loaded") return;
+    const ripeNow = state.suggestions.filter(
+      (s) => s.worthHedging && !s.alreadyHedged && s.hedgeSize >= 5
+    );
+    for (const s of ripeNow) {
+      if (!notifiedRef.current.has(s.position.asset)) {
+        notifiedRef.current.add(s.position.asset);
+        try {
+          new Notification("Time to hedge 🟢", {
+            body: `${s.position.title} — lock in +${usd(s.lockedPnl)} now`,
+          });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    // Let a position re-alert if it drops out of the money and ripens again later.
+    const ids = new Set(ripeNow.map((s) => s.position.asset));
+    for (const id of [...notifiedRef.current]) if (!ids.has(id)) notifiedRef.current.delete(id);
+  }, [state, notify]);
+
   return (
     <div className="mx-auto w-full max-w-5xl px-6">
       {/* Hero */}
@@ -291,6 +333,27 @@ export default function Home() {
               </span>{" "}
               (derived from your connected wallet).
             </p>
+          )}
+
+          {ripe.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/30">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                🔔 {ripe.length} position{ripe.length === 1 ? "" : "s"} ready to hedge — lock in{" "}
+                <span className="font-semibold">+{usd(totalLockable)}</span> total right now.
+              </p>
+              {notify ? (
+                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  Alerts on ✓
+                </span>
+              ) : (
+                <button
+                  onClick={enableNotify}
+                  className="rounded-full border border-emerald-600/30 px-3 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                >
+                  🔔 Alert me when ripe
+                </button>
+              )}
+            </div>
           )}
 
           <AdvicePanel advice={advice} />
