@@ -6,6 +6,7 @@ import { useWallets } from "@privy-io/react-auth";
 import { SignatureTypeV2 } from "@polymarket/clob-client-v2";
 import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
 import { recordTrade, getSecuredSummary, TRADE_EVENT } from "@/lib/track";
+import { track } from "@vercel/analytics";
 
 /** The Polymarket proxy that holds funds + how to sign for it. */
 interface TradeIdentity {
@@ -91,6 +92,7 @@ const SITE_URL = "https://one-click-hedge.vercel.app";
 
 /** Open an X (Twitter) compose intent prefilled with a hedge result. */
 function shareWin(text: string) {
+  track("share_clicked");
   const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     text
   )}&url=${encodeURIComponent(SITE_URL)}`;
@@ -204,7 +206,13 @@ export default function Home() {
         portfolio: json.portfolio,
       });
       setLastUpdated(Date.now());
-      if (!opts?.silent && json.positions.length > 0) loadAdvice(json.address);
+      if (!opts?.silent) {
+        track("wallet_analyzed", {
+          kind: json.kind ?? "none",
+          positions: json.positions.length,
+        });
+        if (json.positions.length > 0) loadAdvice(json.address);
+      }
     } catch (err) {
       // On a silent refresh, keep the last good data instead of erroring out.
       if (!opts?.silent)
@@ -338,6 +346,7 @@ export default function Home() {
             No Polymarket wallet handy?{" "}
             <button
               onClick={() => {
+                track("demo_clicked");
                 setAddress(DEMO_ADDRESS);
                 load(DEMO_ADDRESS);
               }}
@@ -555,8 +564,10 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
       size: shares,
       side: "BUY",
     });
-    if (res.ok) setOrder({ status: "done", orderID: res.orderID });
-    else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
+    if (res.ok) {
+      setOrder({ status: "done", orderID: res.orderID });
+      track("position_opened");
+    } else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
     else if (res.unsupported) setOrder({ status: "unsupported", message: res.message });
     else setOrder({ status: "error", message: res.message });
   }
@@ -943,6 +954,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
     if (res.ok) {
       setOrder({ status: "done", orderID: res.orderID });
       recordTrade({ kind: "hedge", market: p.title, locked: worstPnl }, Date.now());
+      track("hedge_placed", { pct });
     } else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
     else if (res.unsupported) setOrder({ status: "unsupported", message: res.message });
     else setOrder({ status: "error", message: res.message });
@@ -971,6 +983,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
     if (res.ok) {
       setSellOrder({ status: "done", orderID: res.orderID });
       recordTrade({ kind: "sell", market: p.title, locked: sellRealized }, Date.now());
+      track("take_profit");
     } else if (res.geoblocked) setSellOrder({ status: "geoblocked", message: res.message });
     else if (res.unsupported) setSellOrder({ status: "unsupported", message: res.message });
     else setSellOrder({ status: "error", message: res.message });
