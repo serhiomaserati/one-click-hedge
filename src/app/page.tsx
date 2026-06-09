@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useAccount, useWalletClient } from "wagmi";
+import { useWallets } from "@privy-io/react-auth";
+import { SignatureType } from "@polymarket/clob-client";
 import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
+
+/** The Polymarket proxy that holds funds + how to sign for it. */
+interface TradeIdentity {
+  funder: string;
+  signatureType: SignatureType;
+}
 
 interface Position {
   conditionId: string;
@@ -74,7 +82,12 @@ export default function Home() {
   const [address, setAddress] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
   const [advice, setAdvice] = useState<AdviceState>({ status: "hidden" });
+  const [tradeId, setTradeId] = useState<TradeIdentity | null>(null);
   const { address: connectedAddress } = useAccount();
+  const { wallets } = useWallets();
+  const isEmbedded =
+    wallets.find((w) => w.address?.toLowerCase() === connectedAddress?.toLowerCase())
+      ?.walletClientType === "privy";
 
   // Connecting a wallet auto-loads that wallet's portfolio.
   useEffect(() => {
@@ -84,6 +97,30 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectedAddress]);
+
+  // Resolve the connected wallet's Polymarket proxy (the maker/funder). Orders
+  // must be signed as the proxy, not the bare EOA, or Polymarket rejects them.
+  useEffect(() => {
+    let cancelled = false;
+    if (!connectedAddress) {
+      setTradeId(null);
+      return;
+    }
+    fetch(`/api/proxy?address=${connectedAddress}`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (cancelled || j.error) return;
+        setTradeId(
+          isEmbedded
+            ? { funder: j.proxy, signatureType: SignatureType.POLY_PROXY }
+            : { funder: j.safe, signatureType: SignatureType.POLY_GNOSIS_SAFE }
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [connectedAddress, isEmbedded]);
 
   async function load(addrArg?: string) {
     const addr = (addrArg ?? address).trim();
@@ -196,7 +233,7 @@ export default function Home() {
       </section>
 
       {/* Open a position — buy through our builder code */}
-      <OpenPositionPanel />
+      <OpenPositionPanel tradeId={tradeId} />
 
       {/* Loading skeleton */}
       {state.status === "loading" && (
@@ -257,7 +294,7 @@ export default function Home() {
                 </span>
               </div>
               {state.suggestions.map((s) => (
-                <HedgeCard key={s.position.asset} s={s} />
+                <HedgeCard key={s.position.asset} s={s} tradeId={tradeId} />
               ))}
             </div>
           )}
@@ -282,7 +319,7 @@ interface ResolvedMarket {
   tokens: MarketToken[];
 }
 
-function OpenPositionPanel() {
+function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
   const { isConnected, address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [query, setQuery] = useState("");
@@ -327,6 +364,8 @@ function OpenPositionPanel() {
     const res = await placeOrderFromBrowser({
       walletClient,
       address,
+      funder: tradeId?.funder,
+      signatureType: tradeId?.signatureType,
       tokenID: token.tokenId,
       price: limitPrice,
       size: shares,
@@ -438,12 +477,26 @@ function OpenPositionPanel() {
               <p className="text-sm font-medium text-red-600">{order.message}</p>
             ) : null}
 
+            {isConnected && tradeId && (
+              <p className="text-xs text-zinc-400">
+                Trading through your Polymarket wallet{" "}
+                <span className="font-mono">
+                  {tradeId.funder.slice(0, 6)}…{tradeId.funder.slice(-4)}
+                </span>
+                . Make sure it’s funded (deposit on Polymarket first).
+              </p>
+            )}
             {!isConnected ? (
               <p className="text-sm text-zinc-500">Connect your wallet to buy.</p>
             ) : (
               <button
                 onClick={buy}
-                disabled={order.status === "placing" || !market.acceptingOrders || shares <= 0}
+                disabled={
+                  order.status === "placing" ||
+                  !market.acceptingOrders ||
+                  shares <= 0 ||
+                  !tradeId
+                }
                 className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
               >
                 {order.status === "placing"
@@ -625,7 +678,7 @@ type OrderState =
   | { status: "error"; message: string }
   | { status: "geoblocked"; message: string };
 
-function HedgeCard({ s }: { s: HedgeSuggestion }) {
+function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity | null }) {
   const p = s.position;
   const { isConnected, address } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -637,6 +690,8 @@ function HedgeCard({ s }: { s: HedgeSuggestion }) {
     const res = await placeHedgeFromBrowser({
       walletClient,
       address,
+      funder: tradeId?.funder,
+      signatureType: tradeId?.signatureType,
       tokenID: s.hedgeTokenId,
       price: s.hedgePrice,
       size: s.hedgeSize,

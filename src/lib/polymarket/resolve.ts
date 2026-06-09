@@ -23,6 +23,14 @@ export interface Resolved {
   positions: Position[];
 }
 
+/** Derive both Polymarket proxy candidates for an EOA (no network calls). */
+export function deriveProxyAddresses(eoa: string): { safe: string; proxy: string } {
+  return {
+    safe: deriveSafe(eoa, SAFE_FACTORY),
+    proxy: deriveProxyWallet(eoa, PROXY_FACTORY),
+  };
+}
+
 export async function resolveWithPositions(input: string): Promise<Resolved> {
   const candidates: { address: string; kind: WalletKind }[] = [
     { address: input, kind: "eoa" },

@@ -20,7 +20,17 @@ const HOST = "https://clob.polymarket.com";
 
 export interface PlaceOrderArgs {
   walletClient: WalletClient;
+  /** The EOA that signs (the connected wallet). */
   address: `0x${string}`;
+  /**
+   * The maker/funder address — the Polymarket proxy that holds the collateral.
+   * Polymarket rejects raw-EOA makers ("use the deposit wallet flow"), so this
+   * must be the user's Gnosis Safe / proxy. Defaults to `address` only as a
+   * last resort.
+   */
+  funder?: string;
+  /** 2 = Gnosis Safe (browser wallets), 1 = Polymarket proxy (email/Magic). */
+  signatureType?: SignatureType;
   tokenID: string;
   /** Limit price (use the live ask/bid to fill immediately). */
   price: number;
@@ -57,8 +67,8 @@ export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<Hedge
       Chain.POLYGON,
       args.walletClient,
       creds,
-      SignatureType.EOA,
-      args.address,
+      args.signatureType ?? SignatureType.POLY_GNOSIS_SAFE,
+      args.funder ?? args.address,
       undefined,
       false,
       builderConfig
