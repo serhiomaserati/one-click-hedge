@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "One-Click Hedge — Polymarket",
+  title: "One-Click Hedge — lock in your Polymarket profits",
   description:
-    "Read your Polymarket portfolio, find the opposing side of every market, and hedge your risk in one click.",
+    "Lock in profit on winning Polymarket bets or cap losses on losing ones — in one click, at live prices. See exactly what each hedge locks in, hedge part or all, and get alerted when a position is ripe.",
 };
 
 export default function RootLayout({
