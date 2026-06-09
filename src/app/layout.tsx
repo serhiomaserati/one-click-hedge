@@ -14,10 +14,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE = "https://one-click-hedge.vercel.app";
+const TITLE = "One-Click Hedge — AI risk co-pilot for Polymarket";
+const DESCRIPTION =
+  "Lock in profit on winning Polymarket bets or cap losses on losing ones — in one click, at live prices. See exactly what each hedge locks in, hedge part or all, and get alerted when a position is ripe.";
+
 export const metadata: Metadata = {
-  title: "One-Click Hedge — lock in your Polymarket profits",
-  description:
-    "Lock in profit on winning Polymarket bets or cap losses on losing ones — in one click, at live prices. See exactly what each hedge locks in, hedge part or all, and get alerted when a position is ripe.",
+  metadataBase: new URL(SITE),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    url: SITE,
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: "One-Click Hedge",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
