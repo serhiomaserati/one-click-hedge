@@ -754,9 +754,25 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
   const { isConnected, address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [order, setOrder] = useState<OrderState>({ status: "idle" });
+  const [pct, setPct] = useState(100);
+
+  // Partial hedge: hedge `pct`% of the position. Back out the cost basis from the
+  // full-hedge locked P/L, then model both resolution outcomes for this fraction.
+  const S = s.hedgeSize;
+  const h = s.hedgePrice;
+  const fraction = pct / 100;
+  const initialValue = S * (1 - h) - s.lockedPnl;
+  const hedgedShares = Math.round(S * fraction * 100) / 100;
+  const hedgeCost = Math.round(hedgedShares * h * 100) / 100;
+  const totalCost = initialValue + hedgeCost;
+  // If your side wins you keep all S shares; if the opposite wins, only the hedge pays.
+  const ifYouWin = Math.round((S - totalCost) * 100) / 100;
+  const ifOppWin = Math.round((hedgedShares - totalCost) * 100) / 100;
+  const worstPnl = Math.min(ifYouWin, ifOppWin);
+  const tooSmall = hedgedShares < 5;
 
   async function hedge() {
-    if (!isConnected || !walletClient || !address) return;
+    if (!isConnected || !walletClient || !address || tooSmall) return;
     setOrder({ status: "placing" });
     const res = await placeHedgeFromBrowser({
       walletClient,
@@ -765,7 +781,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       signatureType: tradeId?.signatureType,
       tokenID: s.hedgeTokenId,
       price: s.hedgePrice,
-      size: s.hedgeSize,
+      size: hedgedShares,
     });
     if (res.ok) setOrder({ status: "done", orderID: res.orderID });
     else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
@@ -809,7 +825,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
             !isConnected ||
             order.status === "placing" ||
             order.status === "done" ||
-            s.hedgeSize < 5
+            tooSmall
           }
           title={isConnected ? "Place this hedge" : "Connect your wallet first"}
           className="shrink-0 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-600/40"
@@ -820,51 +836,82 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
               ? "Hedged ✓"
               : !isConnected
                 ? "Connect to hedge"
-                : s.hedgeSize < 5
+                : tooSmall
                   ? "Too small"
-                  : "Hedge"}
+                  : pct === 100
+                    ? "Hedge"
+                    : `Hedge ${pct}%`}
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-black/5 pt-4 text-sm dark:border-white/5 sm:grid-cols-4">
-        <Field label="Buy" value={`${Math.round(s.hedgeSize)} ${s.hedgeOutcome}`} />
-        <Field
-          label={s.livePrice ? "Price · live" : "Price · est."}
-          value={`${(s.hedgePrice * 100).toFixed(1)}¢`}
-        />
-        <Field label="Hedge cost" value={usd(s.hedgeCost)} />
-        <Field
-          label="Locks in"
-          value={`${s.lockedPnl >= 0 ? "+" : ""}${usd(s.lockedPnl)} (${
-            s.lockedPnlPct >= 0 ? "+" : ""
-          }${(s.lockedPnlPct * 100).toFixed(1)}%)`}
-          accent={s.lockedPnl >= 0 ? "emerald" : "red"}
-        />
-      </div>
+      {order.status === "idle" && !s.alreadyHedged && (
+        <div className="mt-4 border-t border-black/5 pt-4 dark:border-white/5">
+          {/* How much of the position to hedge */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-zinc-500">Hedge amount</span>
+            <span className="font-semibold">
+              {pct}% · buy {hedgedShares} {s.hedgeOutcome} @ {(s.hedgePrice * 100).toFixed(0)}¢
+            </span>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={100}
+            step={5}
+            value={pct}
+            onChange={(e) => setPct(Number(e.target.value))}
+            className="mt-2 w-full accent-emerald-600"
+            aria-label="Hedge amount"
+          />
+          <div className="mt-0.5 flex justify-between text-xs text-zinc-400">
+            <span>Less cover · more upside</span>
+            <span>Fully locked</span>
+          </div>
 
-      {!s.alreadyHedged && s.hedgeSize >= 5 && order.status === "idle" && (
-        <div
-          className={`mt-3 rounded-lg px-3 py-2 text-sm font-medium ${
-            s.worthHedging
-              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400"
-          }`}
-        >
-          {s.worthHedging
-            ? `✓ Good time to hedge — lock in +${usd(s.lockedPnl)} (+${(
-                s.lockedPnlPct * 100
-              ).toFixed(1)}%) guaranteed, whoever wins.`
-            : `Not worth it yet — hedging now locks in ${usd(s.lockedPnl)} (${(
-                s.lockedPnlPct * 100
-              ).toFixed(1)}%). Hold, or hedge only to cap risk.`}
+          {/* What you end up with under each outcome */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Scenario label={`If ${p.outcome} wins`} pnl={ifYouWin} />
+            <Scenario label={`If ${s.hedgeOutcome} wins`} pnl={ifOppWin} />
+          </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            Hedge cost {usd(hedgeCost)} ·{" "}
+            {pct === 100
+              ? "same result whoever wins (fully locked)"
+              : `worst case ${usd(worstPnl)}`}
+          </p>
+
+          {tooSmall ? (
+            <p className="mt-3 text-sm text-amber-600">
+              {S < 5
+                ? "Position too small to hedge — Polymarket’s minimum order is 5 shares."
+                : "Below the 5-share minimum — drag the hedge amount up."}
+            </p>
+          ) : (
+            <div
+              className={`mt-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                s.worthHedging
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400"
+              }`}
+            >
+              {s.worthHedging
+                ? `✓ Good time to hedge — a full hedge locks in +${usd(s.lockedPnl)} (+${(
+                    s.lockedPnlPct * 100
+                  ).toFixed(1)}%), whoever wins.`
+                : `Not ripe yet — a full hedge would lock in ${usd(s.lockedPnl)} (${(
+                    s.lockedPnlPct * 100
+                  ).toFixed(1)}%). Hold, or hedge to cap risk.`}
+            </div>
+          )}
         </div>
       )}
 
-      {order.status === "idle" && s.hedgeSize < 5 && (
-        <p className="mt-3 text-sm text-zinc-500">
-          Position too small to hedge — Polymarket’s minimum order is 5 shares.
+      {order.status === "idle" && s.alreadyHedged && (
+        <p className="mt-4 border-t border-black/5 pt-4 text-sm text-emerald-600 dark:border-white/5">
+          ✓ This market is already hedged — you hold both sides.
         </p>
       )}
+
       {order.status === "done" && (
         <p className="mt-3 text-sm font-medium text-emerald-600">
           ✓ Hedge order placed{order.orderID ? ` (${order.orderID.slice(0, 10)}…)` : ""}.
@@ -882,25 +929,26 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
   );
 }
 
-function Field({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: "emerald" | "red";
-}) {
-  const color =
-    accent === "emerald"
-      ? "text-emerald-600"
-      : accent === "red"
-        ? "text-red-600"
-        : "text-zinc-700 dark:text-zinc-300";
+/** One resolution outcome of a (partial) hedge: what your P/L would be. */
+function Scenario({ label, pnl }: { label: string; pnl: number }) {
+  const pos = pnl >= 0;
   return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-zinc-400">{label}</p>
-      <p className={`mt-0.5 font-mono ${color}`}>{value}</p>
+    <div
+      className={`rounded-xl border p-3 ${
+        pos
+          ? "border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/20"
+          : "border-red-500/20 bg-red-50/60 dark:bg-red-950/20"
+      }`}
+    >
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p
+        className={`mt-0.5 font-mono text-lg font-semibold ${
+          pos ? "text-emerald-600" : "text-red-600"
+        }`}
+      >
+        {pos ? "+" : ""}
+        {usd(pnl)}
+      </p>
     </div>
   );
 }
