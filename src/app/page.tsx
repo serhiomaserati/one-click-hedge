@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { useWallets } from "@privy-io/react-auth";
 import { SignatureTypeV2 } from "@polymarket/clob-client-v2";
@@ -35,6 +35,8 @@ interface HedgeSuggestion {
   hedgeCost: number;
   lockedValue: number;
   lockedPnl: number;
+  lockedPnlPct: number;
+  worthHedging: boolean;
   livePrice: boolean;
   alreadyHedged: boolean;
 }
@@ -83,6 +85,8 @@ export default function Home() {
   const [state, setState] = useState<State>({ status: "idle" });
   const [advice, setAdvice] = useState<AdviceState>({ status: "hidden" });
   const [tradeId, setTradeId] = useState<TradeIdentity | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number>(0);
+  const loadedInputRef = useRef<string>("");
   const { address: connectedAddress } = useAccount();
   const { wallets } = useWallets();
   const isEmbedded =
@@ -130,18 +134,23 @@ export default function Home() {
     };
   }, [connectedAddress, isEmbedded]);
 
-  async function load(addrArg?: string) {
+  async function load(addrArg?: string, opts?: { silent?: boolean }) {
     const addr = (addrArg ?? address).trim();
     if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
-      setState({ status: "error", message: "Enter a valid wallet address (0x… 40 hex chars)." });
+      if (!opts?.silent)
+        setState({ status: "error", message: "Enter a valid wallet address (0x… 40 hex chars)." });
       return;
     }
-    setState({ status: "loading" });
-    setAdvice({ status: "hidden" });
+    // A silent refresh updates prices in place without the loading skeleton.
+    if (!opts?.silent) {
+      setState({ status: "loading" });
+      setAdvice({ status: "hidden" });
+    }
     try {
       const res = await fetch(`/api/hedge?address=${addr}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load");
+      loadedInputRef.current = addr;
       setState({
         status: "loaded",
         address: json.address,
@@ -150,11 +159,27 @@ export default function Home() {
         suggestions: json.suggestions,
         portfolio: json.portfolio,
       });
-      if (json.positions.length > 0) loadAdvice(json.address);
+      setLastUpdated(Date.now());
+      if (!opts?.silent && json.positions.length > 0) loadAdvice(json.address);
     } catch (err) {
-      setState({ status: "error", message: err instanceof Error ? err.message : String(err) });
+      // On a silent refresh, keep the last good data instead of erroring out.
+      if (!opts?.silent)
+        setState({ status: "error", message: err instanceof Error ? err.message : String(err) });
     }
   }
+
+  // Live prices: silently re-fetch the loaded portfolio every 20s so the locked-in
+  // P/L stays current. Pauses when the tab is hidden.
+  useEffect(() => {
+    if (state.status !== "loaded") return;
+    const id = setInterval(() => {
+      if (loadedInputRef.current && !document.hidden) {
+        load(loadedInputRef.current, { silent: true });
+      }
+    }, 20000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status]);
 
   async function loadAdvice(addr: string) {
     setAdvice({ status: "loading" });
@@ -295,7 +320,10 @@ export default function Home() {
           ) : (
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold">Hedge suggestions</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">Hedge suggestions</h2>
+                  <LiveBadge lastUpdated={lastUpdated} />
+                </div>
                 <span className="text-sm text-zinc-400">
                   {state.suggestions.length} position
                   {state.suggestions.length === 1 ? "" : "s"}
@@ -530,6 +558,27 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
         )}
       </div>
     </section>
+  );
+}
+
+/** Pulsing "Live · updated Ns ago" badge — proves prices auto-refresh. */
+function LiveBadge({ lastUpdated }: { lastUpdated: number }) {
+  const [now, setNow] = useState<number>(() => lastUpdated || 0);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!lastUpdated) return null;
+  const secs = Math.max(0, Math.round((now - lastUpdated) / 1000));
+  const ago = secs < 5 ? "just now" : `${secs}s ago`;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      </span>
+      Live · {ago}
+    </span>
   );
 }
 
@@ -786,10 +835,30 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
         <Field label="Hedge cost" value={usd(s.hedgeCost)} />
         <Field
           label="Locks in"
-          value={`${s.lockedPnl >= 0 ? "+" : ""}${usd(s.lockedPnl)}`}
+          value={`${s.lockedPnl >= 0 ? "+" : ""}${usd(s.lockedPnl)} (${
+            s.lockedPnlPct >= 0 ? "+" : ""
+          }${(s.lockedPnlPct * 100).toFixed(1)}%)`}
           accent={s.lockedPnl >= 0 ? "emerald" : "red"}
         />
       </div>
+
+      {!s.alreadyHedged && s.hedgeSize >= 5 && order.status === "idle" && (
+        <div
+          className={`mt-3 rounded-lg px-3 py-2 text-sm font-medium ${
+            s.worthHedging
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400"
+          }`}
+        >
+          {s.worthHedging
+            ? `✓ Good time to hedge — lock in +${usd(s.lockedPnl)} (+${(
+                s.lockedPnlPct * 100
+              ).toFixed(1)}%) guaranteed, whoever wins.`
+            : `Not worth it yet — hedging now locks in ${usd(s.lockedPnl)} (${(
+                s.lockedPnlPct * 100
+              ).toFixed(1)}%). Hold, or hedge only to cap risk.`}
+        </div>
+      )}
 
       {order.status === "idle" && s.hedgeSize < 5 && (
         <p className="mt-3 text-sm text-zinc-500">
