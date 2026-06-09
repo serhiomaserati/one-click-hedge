@@ -884,6 +884,32 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
     else setOrder({ status: "error", message: res.message });
   }
 
+  // Take-profit: sell the whole position at the live bid to realize P/L now.
+  const [sellOrder, setSellOrder] = useState<OrderState>({ status: "idle" });
+  const sellPrice = Math.max(0.01, Math.round((p.curPrice - 0.02) * 100) / 100);
+  const sellProceeds = Math.round(p.size * sellPrice * 100) / 100;
+  const sellRealized = Math.round((sellProceeds - initialValue) * 100) / 100;
+  const sellTooSmall = p.size < 5;
+
+  async function sell() {
+    if (!isConnected || !walletClient || !address || sellTooSmall) return;
+    setSellOrder({ status: "placing" });
+    const res = await placeOrderFromBrowser({
+      walletClient,
+      address,
+      funder: tradeId?.funder,
+      signatureType: tradeId?.signatureType,
+      tokenID: p.asset,
+      price: sellPrice,
+      size: p.size,
+      side: "SELL",
+    });
+    if (res.ok) setSellOrder({ status: "done", orderID: res.orderID });
+    else if (res.geoblocked) setSellOrder({ status: "geoblocked", message: res.message });
+    else if (res.unsupported) setSellOrder({ status: "unsupported", message: res.message });
+    else setSellOrder({ status: "error", message: res.message });
+  }
+
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-4">
@@ -1023,6 +1049,49 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       )}
       {order.status === "error" && (
         <p className="mt-3 text-sm font-medium text-red-600">Order failed — {order.message}</p>
+      )}
+
+      {/* Take profit: exit the position entirely instead of hedging it. */}
+      {order.status === "idle" && !sellTooSmall && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-3 text-sm dark:border-white/5">
+          <span className="text-zinc-500">
+            Or exit now — sell {Math.round(p.size)} {p.outcome} for ~{usd(sellProceeds)} (
+            <span className={sellRealized >= 0 ? "text-emerald-600" : "text-red-600"}>
+              {sellRealized >= 0 ? "+" : ""}
+              {usd(sellRealized)}
+            </span>
+            )
+          </span>
+          <button
+            onClick={sell}
+            disabled={
+              !isConnected || sellOrder.status === "placing" || sellOrder.status === "done"
+            }
+            className="rounded-full border border-black/10 px-4 py-1.5 text-sm font-semibold transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:hover:bg-white/5"
+          >
+            {sellOrder.status === "placing"
+              ? "Selling…"
+              : sellOrder.status === "done"
+                ? "Sold ✓"
+                : "Take profit"}
+          </button>
+        </div>
+      )}
+      {sellOrder.status === "done" && (
+        <p className="mt-2 text-sm font-medium text-emerald-600">
+          ✓ Sell order placed{sellOrder.orderID ? ` (${sellOrder.orderID.slice(0, 10)}…)` : ""}.
+        </p>
+      )}
+      {sellOrder.status === "geoblocked" && (
+        <p className="mt-2 text-sm font-medium text-amber-600">
+          Trading isn’t available in your region — Polymarket restricts this by location.
+        </p>
+      )}
+      {sellOrder.status === "unsupported" && (
+        <p className="mt-2 text-sm font-medium text-amber-600">{DEPOSIT_WALLET_NOTE}</p>
+      )}
+      {sellOrder.status === "error" && (
+        <p className="mt-2 text-sm font-medium text-red-600">Sell failed — {sellOrder.message}</p>
       )}
     </div>
   );
