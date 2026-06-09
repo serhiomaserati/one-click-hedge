@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Builder — One-Click Hedge",
+  title: "Builder — HedgeHub",
   description:
-    "How One-Click Hedge attributes volume to its Polymarket builder code on CLOB V2.",
+    "How HedgeHub attributes volume to its Polymarket builder code on CLOB V2.",
 };
 
 const BUILDER_CODE =
@@ -20,7 +20,7 @@ export default function BuilderPage() {
         Built on Polymarket CLOB V2
       </h1>
       <p className="mt-5 text-lg leading-8 text-zinc-500 dark:text-zinc-400">
-        Every order placed through One-Click Hedge — a buy, a hedge, or a
+        Every order placed through HedgeHub — a buy, a hedge, or a
         take-profit — is attributed on-chain to our builder code. Attribution is{" "}
         <span className="font-medium text-zinc-700 dark:text-zinc-300">native to V2</span>:
         the code is written directly into the order’s <code>builder</code> field, no

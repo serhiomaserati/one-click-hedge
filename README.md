@@ -1,6 +1,6 @@
-# One-Click Hedge
+# HedgeHub
 
-**An AI risk co-pilot for Polymarket.** Connect your wallet and One-Click Hedge
+**An AI risk co-pilot for Polymarket.** Connect your wallet and HedgeHub
 reads your whole book, prices the other side of every position live, and shows
 you exactly what a hedge locks in — then lets you **hedge or take profit in one
 click**. Built natively on **CLOB V2** for the [Polymarket Builders Program](https://builders.polymarket.com).
@@ -16,7 +16,7 @@ Across a dozen positions, knowing which bets are ripe to lock in — and how muc
 you'd secure — is tedious manual math, so most traders never do it and miss the
 moment.
 
-One-Click Hedge is the decision layer on top: it watches your book and tells you
+HedgeHub is the decision layer on top: it watches your book and tells you
 **what, when, and how much** to hedge, with the math already done.
 
 ## What it does
