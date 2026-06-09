@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 const SITE = "https://hedgehub.app";
-const TITLE = "One-Click Hedge — AI risk co-pilot for Polymarket";
+const TITLE = "HedgeHub — AI risk co-pilot for Polymarket";
 const DESCRIPTION =
   "Lock in profit on winning Polymarket bets or cap losses on losing ones — in one click, at live prices. See exactly what each hedge locks in, hedge part or all, and get alerted when a position is ripe.";
 
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     url: SITE,
     title: TITLE,
     description: DESCRIPTION,
-    siteName: "One-Click Hedge",
+    siteName: "HedgeHub",
   },
   twitter: {
     card: "summary_large_image",
@@ -55,8 +55,8 @@ export default function RootLayout({
             <div className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between px-6">
               <a href="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Hedge
-                <span className="font-normal text-zinc-400">/ Polymarket</span>
+                HedgeHub
+                <span className="font-normal text-zinc-400">for Polymarket</span>
               </a>
               <ConnectButton />
             </div>

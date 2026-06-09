@@ -1,4 +1,4 @@
-# One-Click Hedge — Polymarket Builders Program submission
+# HedgeHub — Polymarket Builders Program submission
 
 **An AI risk co-pilot for Polymarket.** Connect → it reads your whole book, prices
 the other side of every position live, and lets you **hedge or take profit in one
@@ -20,7 +20,7 @@ never do it and miss the moment to take a guaranteed profit or cap a loss.
 
 ## The product
 
-One-Click Hedge is the decision layer on top of Polymarket. It watches your book and
+HedgeHub is the decision layer on top of Polymarket. It watches your book and
 tells you **what, when, and how much** to hedge — with the math already done.
 
 - **Reads your book** — Privy email/wallet login; we auto-resolve your Polymarket
@@ -58,7 +58,7 @@ tells you **what, when, and how much** to hedge — with the math already done.
 - Every hedge or take-profit a user makes is a real order routed to Polymarket — the
   product's core loop *is* volume generation.
 - Built-in growth loop: a **Share on X** button on every filled order ("Just locked in
-  +$X with One-Click Hedge"), now with a proper Open Graph card.
+  +$X with HedgeHub"), now with a proper Open Graph card.
 
 ## Monetization
 

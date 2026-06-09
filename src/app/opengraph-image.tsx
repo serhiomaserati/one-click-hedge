@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "One-Click Hedge — AI risk co-pilot for Polymarket";
+export const alt = "HedgeHub — AI risk co-pilot for Polymarket";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -29,7 +29,7 @@ export default function Image() {
               marginRight: 14,
             }}
           />
-          <div style={{ display: "flex" }}>Hedge / Polymarket</div>
+          <div style={{ display: "flex" }}>HedgeHub</div>
         </div>
 
         {/* headline */}

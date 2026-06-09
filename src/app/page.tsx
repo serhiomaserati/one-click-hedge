@@ -1137,7 +1137,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
           <ShareButton
             text={`Just locked in ${worstPnl >= 0 ? "+" : ""}${usd(
               worstPnl
-            )} on a Polymarket position with One-Click Hedge 🔒`}
+            )} on a Polymarket position with HedgeHub 🔒`}
           />
         </div>
       )}
@@ -1186,7 +1186,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
             {usd(sellRealized)}{sellOrder.orderID ? ` (${sellOrder.orderID.slice(0, 8)}…)` : ""}.
           </p>
           <ShareButton
-            text={`Just took profit on a Polymarket position with One-Click Hedge — ${
+            text={`Just took profit on a Polymarket position with HedgeHub — ${
               sellRealized >= 0 ? "+" : ""
             }${usd(sellRealized)} realized 🔒`}
           />

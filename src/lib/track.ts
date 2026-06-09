@@ -2,7 +2,7 @@
  * Local "secured value" tracker (browser only).
  *
  * Records every hedge / take-profit placed through the app in localStorage so we
- * can show "you've secured $X across N trades with One-Click Hedge" — a sticky
+ * can show "you've secured $X across N trades with HedgeHub" — a sticky
  * retention signal and a traction story for the Builders Program. No backend,
  * no PII; lives entirely in the user's browser.
  */
