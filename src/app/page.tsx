@@ -5,6 +5,7 @@ import { useAccount, useWalletClient } from "wagmi";
 import { useWallets } from "@privy-io/react-auth";
 import { SignatureTypeV2 } from "@polymarket/clob-client-v2";
 import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
+import { recordTrade, getSecuredSummary, TRADE_EVENT } from "@/lib/track";
 
 /** The Polymarket proxy that holds funds + how to sign for it. */
 interface TradeIdentity {
@@ -81,13 +82,46 @@ function usd(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
+const SITE_URL = "https://one-click-hedge.vercel.app";
+
+/** Open an X (Twitter) compose intent prefilled with a hedge result. */
+function shareWin(text: string) {
+  const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    text
+  )}&url=${encodeURIComponent(SITE_URL)}`;
+  window.open(intent, "_blank", "noopener,noreferrer");
+}
+
+function ShareButton({ text }: { text: string }) {
+  return (
+    <button
+      onClick={() => shareWin(text)}
+      className="shrink-0 rounded-full border border-emerald-600/30 px-3 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+    >
+      Share on X 𝕏
+    </button>
+  );
+}
+
 export default function Home() {
   const [address, setAddress] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
   const [advice, setAdvice] = useState<AdviceState>({ status: "hidden" });
   const [tradeId, setTradeId] = useState<TradeIdentity | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number>(0);
+  const [secured, setSecured] = useState<{ count: number; secured: number }>({
+    count: 0,
+    secured: 0,
+  });
   const loadedInputRef = useRef<string>("");
+
+  // Running tally of value secured through the app (localStorage-backed).
+  useEffect(() => {
+    const refresh = () => setSecured(getSecuredSummary());
+    refresh();
+    window.addEventListener(TRADE_EVENT, refresh);
+    return () => window.removeEventListener(TRADE_EVENT, refresh);
+  }, []);
   const { address: connectedAddress } = useAccount();
   const { wallets } = useWallets();
   const isEmbedded =
@@ -266,6 +300,14 @@ export default function Home() {
             waiting for the market to resolve. We price the other side live and show
             you exactly what each hedge locks in.
           </p>
+
+          {secured.count > 0 && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+              🔒 You’ve secured{" "}
+              <span className="font-semibold">{usd(secured.secured)}</span> across{" "}
+              {secured.count} trade{secured.count === 1 ? "" : "s"} here
+            </p>
+          )}
 
           {/* Analyzer */}
           <div className="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row">
@@ -881,8 +923,10 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       price: s.hedgePrice,
       size: hedgedShares,
     });
-    if (res.ok) setOrder({ status: "done", orderID: res.orderID });
-    else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
+    if (res.ok) {
+      setOrder({ status: "done", orderID: res.orderID });
+      recordTrade({ kind: "hedge", market: p.title, locked: worstPnl }, Date.now());
+    } else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
     else if (res.unsupported) setOrder({ status: "unsupported", message: res.message });
     else setOrder({ status: "error", message: res.message });
   }
@@ -907,8 +951,10 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       size: p.size,
       side: "SELL",
     });
-    if (res.ok) setSellOrder({ status: "done", orderID: res.orderID });
-    else if (res.geoblocked) setSellOrder({ status: "geoblocked", message: res.message });
+    if (res.ok) {
+      setSellOrder({ status: "done", orderID: res.orderID });
+      recordTrade({ kind: "sell", market: p.title, locked: sellRealized }, Date.now());
+    } else if (res.geoblocked) setSellOrder({ status: "geoblocked", message: res.message });
     else if (res.unsupported) setSellOrder({ status: "unsupported", message: res.message });
     else setSellOrder({ status: "error", message: res.message });
   }
@@ -1038,9 +1084,17 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       )}
 
       {order.status === "done" && (
-        <p className="mt-3 text-sm font-medium text-emerald-600">
-          ✓ Hedge order placed{order.orderID ? ` (${order.orderID.slice(0, 10)}…)` : ""}.
-        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium text-emerald-600">
+            ✓ Hedge placed — locked in {worstPnl >= 0 ? "+" : ""}
+            {usd(worstPnl)}{order.orderID ? ` (${order.orderID.slice(0, 8)}…)` : ""}.
+          </p>
+          <ShareButton
+            text={`Just locked in ${worstPnl >= 0 ? "+" : ""}${usd(
+              worstPnl
+            )} on a Polymarket position with One-Click Hedge 🔒`}
+          />
+        </div>
       )}
       {order.status === "geoblocked" && (
         <p className="mt-3 text-sm font-medium text-amber-600">
@@ -1081,9 +1135,17 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
         </div>
       )}
       {sellOrder.status === "done" && (
-        <p className="mt-2 text-sm font-medium text-emerald-600">
-          ✓ Sell order placed{sellOrder.orderID ? ` (${sellOrder.orderID.slice(0, 10)}…)` : ""}.
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium text-emerald-600">
+            ✓ Sold — realized {sellRealized >= 0 ? "+" : ""}
+            {usd(sellRealized)}{sellOrder.orderID ? ` (${sellOrder.orderID.slice(0, 8)}…)` : ""}.
+          </p>
+          <ShareButton
+            text={`Just took profit on a Polymarket position with One-Click Hedge — ${
+              sellRealized >= 0 ? "+" : ""
+            }${usd(sellRealized)} realized 🔒`}
+          />
+        </div>
       )}
       {sellOrder.status === "geoblocked" && (
         <p className="mt-2 text-sm font-medium text-amber-600">
