@@ -43,6 +43,8 @@ export async function getPositions(
   url.searchParams.set("sizeThreshold", String(opts?.sizeThreshold ?? 1));
   url.searchParams.set("sortBy", "CURRENT");
   url.searchParams.set("sortDirection", "DESC");
+  // Data API defaults to 100 — raise it so heavy traders aren't silently truncated.
+  url.searchParams.set("limit", "500");
 
   const res = await fetch(url, {
     headers: { accept: "application/json" },
