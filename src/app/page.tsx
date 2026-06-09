@@ -260,8 +260,9 @@ export default function Home() {
             <span className="text-emerald-600">one click</span>
           </h1>
           <p className="mt-5 text-balance text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            We read your open positions, find the opposing side of each market at the
-            live price, and let you lock in your risk instantly.
+            Lock in profit on a winning bet — or cap losses on a losing one — without
+            waiting for the market to resolve. We price the other side live and show
+            you exactly what each hedge locks in.
           </p>
 
           {/* Analyzer */}
@@ -286,23 +287,37 @@ export default function Home() {
             <p className="mt-3 text-sm font-medium text-red-600">{state.message}</p>
           )}
 
-          {/* Feature row (only before results) */}
+          {/* How it works + example (only before results) */}
           {state.status !== "loaded" && (
-            <div className="mt-12 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                ["1 · Read", "Pull every open position from your portfolio."],
-                ["2 · Match", "Find the opposite outcome at the live order-book price."],
-                ["3 · Hedge", "Lock in your risk with a single click."],
-              ].map(([t, d]) => (
-                <div
-                  key={t}
-                  className="rounded-xl border border-black/5 bg-white p-4 text-left dark:border-white/10 dark:bg-zinc-900"
-                >
-                  <p className="text-sm font-semibold text-emerald-600">{t}</p>
-                  <p className="mt-1 text-sm text-zinc-500">{d}</p>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="mt-12 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  ["1 · Connect", "Sign in and we load your Polymarket positions automatically."],
+                  ["2 · See the lock-in", "Each position is priced against its live opposite — with your guaranteed P/L."],
+                  ["3 · Hedge in one click", "Pick how much to hedge with a slider and lock it in. No math, no waiting."],
+                ].map(([t, d]) => (
+                  <div
+                    key={t}
+                    className="rounded-xl border border-black/5 bg-white p-4 text-left dark:border-white/10 dark:bg-zinc-900"
+                  >
+                    <p className="text-sm font-semibold text-emerald-600">{t}</p>
+                    <p className="mt-1 text-sm text-zinc-500">{d}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 w-full rounded-xl border border-emerald-500/20 bg-emerald-50/60 p-4 text-left text-sm leading-6 text-zinc-600 dark:border-emerald-500/15 dark:bg-emerald-950/20 dark:text-zinc-300">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  Why hedge?
+                </span>{" "}
+                You bought a team at 67¢ and it climbed to 88¢. Instead of risking a
+                comeback, you buy the other side for 12¢ — locking in{" "}
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  +31%
+                </span>{" "}
+                no matter who wins. We spot these moments for you.
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -360,7 +375,11 @@ export default function Home() {
 
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Portfolio value" value={usd(totalValue)} />
-            <Stat label="Downside risk" value={usd(totalValue)} accent="amber" />
+            <Stat
+              label="Lockable now"
+              value={`${totalLockable > 0 ? "+" : ""}${usd(totalLockable)}`}
+              accent={totalLockable > 0 ? "emerald" : undefined}
+            />
             <Stat
               label="Unrealized PnL"
               value={`${totalPnl >= 0 ? "+" : ""}${usd(totalPnl)}`}
@@ -373,11 +392,12 @@ export default function Home() {
           )}
 
           {state.positions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-black/10 bg-white py-16 text-center dark:border-white/10 dark:bg-zinc-900">
-              <p className="text-base font-medium">No open positions</p>
-              <p className="mt-1 text-sm text-zinc-500">
-                Nothing to hedge for this wallet. If you trade on Polymarket, paste your
-                Polymarket profile address above.
+            <div className="rounded-2xl border border-dashed border-black/10 bg-white px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900">
+              <p className="text-base font-medium">No open positions yet</p>
+              <p className="mx-auto mt-1 max-w-md text-sm text-zinc-500">
+                Nothing to hedge on this wallet. Open a position in the panel above to get
+                started, or paste the Polymarket address you trade with into the field at
+                the top.
               </p>
             </div>
           ) : (
@@ -392,6 +412,11 @@ export default function Home() {
                   {state.suggestions.length === 1 ? "" : "s"}
                 </span>
               </div>
+              <p className="text-sm text-zinc-500">
+                <span className="font-medium text-emerald-600">Green</span> = hedging now
+                locks in a profit. Drag the slider on a card to hedge part of a position
+                and keep some upside.
+              </p>
               {state.suggestions.map((s) => (
                 <HedgeCard key={s.position.asset} s={s} tradeId={tradeId} />
               ))}
