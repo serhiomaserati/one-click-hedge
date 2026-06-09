@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { placeHedgeFromBrowser } from "@/lib/polymarket/client-order";
+import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
 
 interface Position {
   conditionId: string;
@@ -195,6 +195,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Open a position — buy through our builder code */}
+      <OpenPositionPanel />
+
       {/* Loading skeleton */}
       {state.status === "loading" && (
         <section className="space-y-3 pb-20">
@@ -261,6 +264,183 @@ export default function Home() {
         </section>
       )}
     </div>
+  );
+}
+
+interface MarketToken {
+  outcome: string;
+  tokenId: string;
+  price: number;
+  live: boolean;
+}
+interface ResolvedMarket {
+  question: string;
+  slug: string;
+  image: string;
+  acceptingOrders: boolean;
+  tokens: MarketToken[];
+}
+
+function OpenPositionPanel() {
+  const { isConnected, address } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [market, setMarket] = useState<ResolvedMarket | null>(null);
+  const [err, setErr] = useState("");
+  const [pick, setPick] = useState(0);
+  const [amount, setAmount] = useState("2");
+  const [order, setOrder] = useState<OrderState>({ status: "idle" });
+
+  async function loadMarket() {
+    if (!query.trim()) return;
+    setLoading(true);
+    setErr("");
+    setMarket(null);
+    setOrder({ status: "idle" });
+    try {
+      const res = await fetch(`/api/market?q=${encodeURIComponent(query.trim())}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to load market");
+      setMarket(json);
+      setPick(0);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const token = market?.tokens[pick];
+  const usdAmount = Number(amount);
+  // Cross the spread a touch so the limit order fills immediately.
+  const limitPrice = token ? Math.min(0.99, Math.round((token.price + 0.02) * 100) / 100) : 0;
+  const shares =
+    token && limitPrice > 0 && usdAmount > 0
+      ? Math.round((usdAmount / limitPrice) * 100) / 100
+      : 0;
+
+  async function buy() {
+    if (!token || !isConnected || !walletClient || !address) return;
+    setOrder({ status: "placing" });
+    const res = await placeOrderFromBrowser({
+      walletClient,
+      address,
+      tokenID: token.tokenId,
+      price: limitPrice,
+      size: shares,
+      side: "BUY",
+    });
+    if (res.ok) setOrder({ status: "done", orderID: res.orderID });
+    else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
+    else setOrder({ status: "error", message: res.message });
+  }
+
+  return (
+    <section className="pb-8">
+      <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Open a position</h2>
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+            via your builder code
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-zinc-500">
+          Buy any market through One-Click Hedge — then hedge it below. Every order
+          routes through your builder code.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && loadMarket()}
+            placeholder="Paste a Polymarket market URL or slug"
+            spellCheck={false}
+            className="flex-1 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-zinc-950"
+          />
+          <button
+            onClick={loadMarket}
+            disabled={loading}
+            className="rounded-xl border border-black/10 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
+          >
+            {loading ? "Loading…" : "Load market"}
+          </button>
+        </div>
+        {err && <p className="mt-2 text-sm font-medium text-red-600">{err}</p>}
+
+        {market && token && (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-start gap-3">
+              {market.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={market.image} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+              )}
+              <p className="text-sm font-medium">{market.question}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {market.tokens.map((t, i) => (
+                <button
+                  key={t.tokenId}
+                  onClick={() => setPick(i)}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+                    i === pick
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                      : "border-black/10 hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/5"
+                  }`}
+                >
+                  {t.outcome} · {(t.price * 100).toFixed(0)}¢
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-sm">
+                <span className="mb-1 block text-zinc-500">Amount (USDC)</span>
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  inputMode="decimal"
+                  className="w-28 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-zinc-950"
+                />
+              </label>
+              <p className="text-sm text-zinc-500">
+                ≈ <span className="font-medium text-zinc-700 dark:text-zinc-300">{shares}</span>{" "}
+                shares @ {limitPrice.toFixed(2)}
+              </p>
+            </div>
+
+            {order.status === "done" ? (
+              <p className="text-sm font-medium text-emerald-600">
+                ✓ Order placed{order.orderID ? ` · ${order.orderID.slice(0, 10)}…` : ""}. Load your
+                wallet above to hedge it.
+              </p>
+            ) : order.status === "geoblocked" ? (
+              <p className="text-sm font-medium text-amber-600">
+                Your region can’t open positions on Polymarket. Connect from an allowed region.
+              </p>
+            ) : order.status === "error" ? (
+              <p className="text-sm font-medium text-red-600">{order.message}</p>
+            ) : null}
+
+            {!isConnected ? (
+              <p className="text-sm text-zinc-500">Connect your wallet to buy.</p>
+            ) : (
+              <button
+                onClick={buy}
+                disabled={order.status === "placing" || !market.acceptingOrders || shares <= 0}
+                className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {order.status === "placing"
+                  ? "Placing…"
+                  : `Buy ${token.outcome} · ${usd(usdAmount || 0)}`}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
