@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE = "https://one-click-hedge.vercel.app";
+const SITE = "https://hedgehub.app";
 const TITLE = "One-Click Hedge — AI risk co-pilot for Polymarket";
 const DESCRIPTION =
   "Lock in profit on winning Polymarket bets or cap losses on losing ones — in one click, at live prices. See exactly what each hedge locks in, hedge part or all, and get alerted when a position is ripe.";
