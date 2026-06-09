@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { useWallets } from "@privy-io/react-auth";
-import { SignatureType } from "@polymarket/clob-client";
+import { SignatureTypeV2 } from "@polymarket/clob-client-v2";
 import { placeHedgeFromBrowser, placeOrderFromBrowser } from "@/lib/polymarket/client-order";
 
 /** The Polymarket proxy that holds funds + how to sign for it. */
 interface TradeIdentity {
   funder: string;
-  signatureType: SignatureType;
+  signatureType: SignatureTypeV2;
 }
 
 interface Position {
@@ -112,16 +112,16 @@ export default function Home() {
         if (cancelled || j.error) return;
         // Authoritative: where positions actually live (safe → sig 2, proxy → sig 1).
         if (j.fundedKind === "safe") {
-          return setTradeId({ funder: j.funded, signatureType: SignatureType.POLY_GNOSIS_SAFE });
+          return setTradeId({ funder: j.funded, signatureType: SignatureTypeV2.POLY_GNOSIS_SAFE });
         }
         if (j.fundedKind === "proxy") {
-          return setTradeId({ funder: j.funded, signatureType: SignatureType.POLY_PROXY });
+          return setTradeId({ funder: j.funded, signatureType: SignatureTypeV2.POLY_PROXY });
         }
         // No positions yet — best-effort guess by wallet type.
         setTradeId(
           isEmbedded
-            ? { funder: j.proxy, signatureType: SignatureType.POLY_PROXY }
-            : { funder: j.safe, signatureType: SignatureType.POLY_GNOSIS_SAFE }
+            ? { funder: j.proxy, signatureType: SignatureTypeV2.POLY_PROXY }
+            : { funder: j.safe, signatureType: SignatureTypeV2.POLY_GNOSIS_SAFE }
         );
       })
       .catch(() => {});

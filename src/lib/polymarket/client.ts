@@ -1,34 +1,22 @@
 /**
- * ClobClient factories — SERVER-SIDE ONLY.
+ * ClobClient factory — SERVER-SIDE ONLY (CLOB V2).
  *
- * Stage 0 only wires the read-only client (no credentials needed), which is
- * enough to read markets, order books and prices, and to health-check the API.
- *
- * The authenticated client (signing + order placement with builder attribution)
- * is added in Stage 3, once wallet signing is in place. See getAuthedClient().
+ * Only the read-only client lives here (no credentials needed): markets, order
+ * books, prices, health. Order placement happens CLIENT-SIDE in the browser
+ * with the user's own wallet — see src/lib/polymarket/client-order.ts.
  */
-import { ClobClient } from "@polymarket/clob-client";
+import { ClobClient } from "@polymarket/clob-client-v2";
 import { POLYMARKET } from "./config";
 
 let readClient: ClobClient | null = null;
 
-/** Credential-free client for public reads (markets, books, prices, health). */
+/** Credential-free V2 client for public reads (markets, books, prices, health). */
 export function getReadClient(): ClobClient {
   if (!readClient) {
-    readClient = new ClobClient(POLYMARKET.clobHost, POLYMARKET.chainId);
+    readClient = new ClobClient({
+      host: POLYMARKET.clobHost,
+      chain: POLYMARKET.chainId,
+    });
   }
   return readClient;
-}
-
-/**
- * Authenticated client for placing orders with builder-code attribution.
- *
- * TODO (Stage 3): build this with a viem WalletClient signer + L2 ApiKeyCreds +
- * BuilderConfig, verified against Polymarket's official builder example repos.
- * Throws for now so nothing silently places orders without attribution.
- */
-export function getAuthedClient(): never {
-  throw new Error(
-    "getAuthedClient() is not implemented yet — wired up in Stage 3 (order placement)."
-  );
 }
