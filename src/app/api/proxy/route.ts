@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { deriveProxyAddresses } from "@/lib/polymarket/resolve";
+import { deriveProxyAddresses, resolveWithPositions } from "@/lib/polymarket/resolve";
 
 /**
  * GET /api/proxy?address=0x...
- * Returns the Polymarket proxy addresses (Gnosis Safe + EIP-1167) for an EOA,
- * so the browser can sign orders with the correct funder/signature type.
+ * Returns the Polymarket proxy addresses for an EOA, plus the one that actually
+ * holds positions (so the browser can sign orders with the correct funder and
+ * signature type). The funded address is authoritative; the derived ones are a
+ * fallback for wallets with no positions yet.
  */
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address")?.trim() ?? "";
@@ -15,7 +17,15 @@ export async function GET(req: Request) {
     );
   }
   try {
-    return NextResponse.json({ eoa: address, ...deriveProxyAddresses(address) });
+    const derived = deriveProxyAddresses(address);
+    const resolved = await resolveWithPositions(address).catch(() => null);
+    return NextResponse.json({
+      eoa: address,
+      ...derived,
+      // The address with positions + how it was derived ("safe" | "proxy" | …).
+      funded: resolved && resolved.kind !== "none" ? resolved.address : null,
+      fundedKind: resolved?.kind ?? "none",
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },

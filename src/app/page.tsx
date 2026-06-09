@@ -110,6 +110,14 @@ export default function Home() {
       .then((r) => r.json())
       .then((j) => {
         if (cancelled || j.error) return;
+        // Authoritative: where positions actually live (safe → sig 2, proxy → sig 1).
+        if (j.fundedKind === "safe") {
+          return setTradeId({ funder: j.funded, signatureType: SignatureType.POLY_GNOSIS_SAFE });
+        }
+        if (j.fundedKind === "proxy") {
+          return setTradeId({ funder: j.funded, signatureType: SignatureType.POLY_PROXY });
+        }
+        // No positions yet — best-effort guess by wallet type.
         setTradeId(
           isEmbedded
             ? { funder: j.proxy, signatureType: SignatureType.POLY_PROXY }
