@@ -494,24 +494,33 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
                 . Make sure it’s funded (deposit on Polymarket first).
               </p>
             )}
-            {!isConnected ? (
-              <p className="text-sm text-zinc-500">Connect your wallet to buy.</p>
-            ) : (
-              <button
-                onClick={buy}
-                disabled={
-                  order.status === "placing" ||
-                  !market.acceptingOrders ||
-                  shares <= 0 ||
-                  !tradeId
-                }
-                className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {order.status === "placing"
-                  ? "Placing…"
-                  : `Buy ${token.outcome} · ${usd(usdAmount || 0)}`}
-              </button>
-            )}
+            {(() => {
+              const reason = !isConnected
+                ? "Connect your wallet to buy."
+                : !tradeId
+                  ? "Finding your Polymarket wallet… (one moment)"
+                  : !market.acceptingOrders
+                    ? "This market isn’t accepting orders."
+                    : shares <= 0
+                      ? "Enter an amount in USDC."
+                      : "";
+              return (
+                <>
+                  <button
+                    onClick={buy}
+                    disabled={order.status === "placing" || reason !== ""}
+                    className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {order.status === "placing"
+                      ? "Placing…"
+                      : `Buy ${token.outcome} · ${usd(usdAmount || 0)}`}
+                  </button>
+                  {reason && order.status !== "placing" && (
+                    <p className="mt-2 text-sm text-zinc-500">{reason}</p>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
