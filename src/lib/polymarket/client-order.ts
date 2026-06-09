@@ -49,7 +49,7 @@ export type PlaceHedgeArgs = PlaceOrderArgs;
 
 export type HedgeResult =
   | { ok: true; orderID: string; raw: unknown }
-  | { ok: false; geoblocked: boolean; message: string };
+  | { ok: false; geoblocked: boolean; unsupported: boolean; message: string };
 
 /**
  * Place any order (BUY or SELL) from the browser through the user's wallet,
@@ -91,7 +91,12 @@ export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<Hedge
     // Polymarket returns { error, ... } on geoblock / rejection.
     if (res && typeof res === "object" && "error" in res) {
       const message = String((res as { error: unknown }).error);
-      return { ok: false, geoblocked: isGeoblock(message), message };
+      return {
+        ok: false,
+        geoblocked: isGeoblock(message),
+        unsupported: isDepositWalletIssue(message),
+        message,
+      };
     }
 
     const orderID =
@@ -102,7 +107,12 @@ export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<Hedge
     return { ok: true, orderID, raw: res };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, geoblocked: isGeoblock(message), message };
+    return {
+      ok: false,
+      geoblocked: isGeoblock(message),
+      unsupported: isDepositWalletIssue(message),
+      message,
+    };
   }
 }
 
@@ -113,4 +123,14 @@ export function placeHedgeFromBrowser(args: PlaceOrderArgs): Promise<HedgeResult
 
 function isGeoblock(message: string): boolean {
   return /geoblock|region|restricted/i.test(message);
+}
+
+/**
+ * The new Polymarket "deposit wallet" (smart-contract / POLY_1271) account.
+ * In-app trading for it is blocked by an open bug in Polymarket's own V2 SDK
+ * (API-key L1 auth isn't EIP-1271-wrapped → "signer must be the API key").
+ * We detect it to show a clear message instead of a cryptic failure.
+ */
+function isDepositWalletIssue(message: string): boolean {
+  return /deposit wallet|api key|signer address|1271/i.test(message);
 }

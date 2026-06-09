@@ -500,6 +500,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
     });
     if (res.ok) setOrder({ status: "done", orderID: res.orderID });
     else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
+    else if (res.unsupported) setOrder({ status: "unsupported", message: res.message });
     else setOrder({ status: "error", message: res.message });
   }
 
@@ -600,6 +601,8 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
               <p className="text-sm font-medium text-amber-600">
                 Your region can’t open positions on Polymarket. Connect from an allowed region.
               </p>
+            ) : order.status === "unsupported" ? (
+              <p className="text-sm font-medium text-amber-600">{DEPOSIT_WALLET_NOTE}</p>
             ) : order.status === "error" ? (
               <p className="text-sm font-medium text-red-600">{order.message}</p>
             ) : null}
@@ -835,7 +838,11 @@ type OrderState =
   | { status: "placing" }
   | { status: "done"; orderID: string }
   | { status: "error"; message: string }
+  | { status: "unsupported"; message: string }
   | { status: "geoblocked"; message: string };
+
+const DEPOSIT_WALLET_NOTE =
+  "Your Polymarket account uses the new smart wallet, which can’t trade in-app yet (a fix is pending in Polymarket’s V2 SDK). You can still analyze hedges here and place this trade on polymarket.com.";
 
 function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity | null }) {
   const p = s.position;
@@ -873,6 +880,7 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
     });
     if (res.ok) setOrder({ status: "done", orderID: res.orderID });
     else if (res.geoblocked) setOrder({ status: "geoblocked", message: res.message });
+    else if (res.unsupported) setOrder({ status: "unsupported", message: res.message });
     else setOrder({ status: "error", message: res.message });
   }
 
@@ -1009,6 +1017,9 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
         <p className="mt-3 text-sm font-medium text-amber-600">
           Trading isn’t available in your region — Polymarket restricts this by location.
         </p>
+      )}
+      {order.status === "unsupported" && (
+        <p className="mt-3 text-sm font-medium text-amber-600">{DEPOSIT_WALLET_NOTE}</p>
       )}
       {order.status === "error" && (
         <p className="mt-3 text-sm font-medium text-red-600">Order failed — {order.message}</p>
