@@ -1,19 +1,18 @@
 /**
- * wagmi config — browser wallet connection on Polygon.
+ * wagmi config for Privy — browser wallet + Magic-style email login on Polygon.
  *
- * Uses the injected connector (MetaMask / browser wallets) so no WalletConnect
- * project id is needed for the MVP. Orders are signed client-side by the user's
- * own wallet so Polymarket's geoblock applies per-user.
+ * Privy manages the connectors (external wallets + embedded wallets for email
+ * users), so we don't declare connectors here. Our existing hooks (useAccount,
+ * useWalletClient) keep working — orders are still signed client-side by the
+ * user's wallet, so Polymarket's geoblock applies per-user.
  */
-import { http, createConfig } from "wagmi";
+import { http } from "wagmi";
 import { polygon } from "wagmi/chains";
-import { injected } from "wagmi/connectors";
+import { createConfig } from "@privy-io/wagmi";
 
 export const wagmiConfig = createConfig({
   chains: [polygon],
-  connectors: [injected()],
   transports: {
     [polygon.id]: http(),
   },
-  ssr: true,
 });
