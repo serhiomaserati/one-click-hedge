@@ -11,8 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.102.0",
     "@polymarket/builder-relayer-client": "^0.0.10",
-    "@polymarket/builder-signing-sdk": "^1.0.0",
-    "@polymarket/clob-client": "^5.8.1",
+    "@polymarket/clob-client-v2": "^1.0.6",
     "@privy-io/react-auth": "^3.29.2",
     "@privy-io/wagmi": "^4.0.11",
     "@tanstack/react-query": "^5.101.0",

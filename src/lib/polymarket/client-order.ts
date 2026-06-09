@@ -1,36 +1,41 @@
 /**
- * CLIENT-SIDE order placement (browser only).
+ * CLIENT-SIDE order placement (browser only) — CLOB V2.
  *
  * The user's own wagmi wallet signs and submits the order directly to Polymarket,
  * so the geoblock applies to the user's IP (the correct, ToS-compliant model).
- * Builder-fee attribution is done via remoteBuilderConfig → our /api/builder/sign
- * endpoint, so the builder secret never reaches the browser.
+ *
+ * On V2 builder attribution is NATIVE: the public `builderCode` (bytes32) goes
+ * straight into the order's `builder` field — no remote signer, no secret. So
+ * this runs entirely in the browser.
  */
 import {
   ClobClient,
   Chain,
-  SignatureType,
+  SignatureTypeV2,
   Side,
   OrderType,
-} from "@polymarket/clob-client";
-import { BuilderConfig } from "@polymarket/builder-signing-sdk";
+} from "@polymarket/clob-client-v2";
 import type { WalletClient } from "viem";
 
 const HOST = "https://clob.polymarket.com";
+
+// Public builder-code attribution id (safe in the browser).
+const BUILDER_CODE =
+  process.env.NEXT_PUBLIC_BUILDER_CODE ??
+  "0x8be51911f257f57dd726ae2dab5cf8aa02c82318ebf537d3ce9783f8a74cc9ea";
 
 export interface PlaceOrderArgs {
   walletClient: WalletClient;
   /** The EOA that signs (the connected wallet). */
   address: `0x${string}`;
   /**
-   * The maker/funder address — the Polymarket proxy that holds the collateral.
-   * Polymarket rejects raw-EOA makers ("use the deposit wallet flow"), so this
-   * must be the user's Gnosis Safe / proxy. Defaults to `address` only as a
-   * last resort.
+   * The maker/funder address — the Polymarket wallet that holds the collateral
+   * (Gnosis Safe / proxy / deposit wallet). Polymarket rejects raw-EOA makers,
+   * so this must be the user's proxy. Defaults to `address` only as a fallback.
    */
   funder?: string;
-  /** 2 = Gnosis Safe (browser wallets), 1 = Polymarket proxy (email/Magic). */
-  signatureType?: SignatureType;
+  /** 2 = Gnosis Safe, 1 = Polymarket proxy, 3 = smart-contract (deposit) wallet. */
+  signatureType?: SignatureTypeV2;
   tokenID: string;
   /** Limit price (use the live ask/bid to fill immediately). */
   price: number;
@@ -48,41 +53,42 @@ export type HedgeResult =
 
 /**
  * Place any order (BUY or SELL) from the browser through the user's wallet,
- * with builder-fee attribution via the remote signer. Both the hedge button and
- * the "Open a position" panel route through here so every order counts toward
- * our builder code.
+ * attributing it to our builder code. Both the hedge button and the
+ * "Open a position" panel route through here so every order counts.
  */
 export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<HedgeResult> {
-  const builderConfig = new BuilderConfig({
-    remoteBuilderConfig: { url: `${window.location.origin}/api/builder/sign` },
-  });
-
   try {
     // Derive L2 creds (this prompts one signature in the wallet).
-    const bootstrap = new ClobClient(HOST, Chain.POLYGON, args.walletClient);
+    const bootstrap = new ClobClient({
+      host: HOST,
+      chain: Chain.POLYGON,
+      signer: args.walletClient,
+    });
     const creds = await bootstrap.createOrDeriveApiKey();
 
-    const client = new ClobClient(
-      HOST,
-      Chain.POLYGON,
-      args.walletClient,
+    const client = new ClobClient({
+      host: HOST,
+      chain: Chain.POLYGON,
+      signer: args.walletClient,
       creds,
-      args.signatureType ?? SignatureType.POLY_GNOSIS_SAFE,
-      args.funder ?? args.address,
+      signatureType: args.signatureType ?? SignatureTypeV2.POLY_GNOSIS_SAFE,
+      funderAddress: args.funder ?? args.address,
+      builderConfig: { builderCode: BUILDER_CODE },
+    });
+
+    const res = await client.createAndPostOrder(
+      {
+        tokenID: args.tokenID,
+        price: args.price,
+        size: args.size,
+        side: args.side === "SELL" ? Side.SELL : Side.BUY,
+        builderCode: BUILDER_CODE,
+      },
       undefined,
-      false,
-      builderConfig
+      OrderType.GTC
     );
 
-    const signed = await client.createOrder({
-      tokenID: args.tokenID,
-      price: args.price,
-      size: args.size,
-      side: args.side === "SELL" ? Side.SELL : Side.BUY,
-    });
-    const res = await client.postOrder(signed, OrderType.GTC);
-
-    // Polymarket returns { error, status } on geoblock / rejection.
+    // Polymarket returns { error, ... } on geoblock / rejection.
     if (res && typeof res === "object" && "error" in res) {
       const message = String((res as { error: unknown }).error);
       return { ok: false, geoblocked: isGeoblock(message), message };
