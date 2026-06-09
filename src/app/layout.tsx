@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "./providers";
 import { ConnectButton } from "./connect-button";
 
@@ -71,6 +72,7 @@ export default function RootLayout({
             </div>
           </footer>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
