@@ -18,20 +18,31 @@ import type { WalletClient } from "viem";
 
 const HOST = "https://clob.polymarket.com";
 
-export interface PlaceHedgeArgs {
+export interface PlaceOrderArgs {
   walletClient: WalletClient;
   address: `0x${string}`;
   tokenID: string;
-  /** Limit price (use the live ask to fill immediately). */
+  /** Limit price (use the live ask/bid to fill immediately). */
   price: number;
   size: number;
+  /** BUY to open/hedge, SELL to close. Defaults to BUY. */
+  side?: "BUY" | "SELL";
 }
+
+/** @deprecated use PlaceOrderArgs — kept for the hedge call sites. */
+export type PlaceHedgeArgs = PlaceOrderArgs;
 
 export type HedgeResult =
   | { ok: true; orderID: string; raw: unknown }
   | { ok: false; geoblocked: boolean; message: string };
 
-export async function placeHedgeFromBrowser(args: PlaceHedgeArgs): Promise<HedgeResult> {
+/**
+ * Place any order (BUY or SELL) from the browser through the user's wallet,
+ * with builder-fee attribution via the remote signer. Both the hedge button and
+ * the "Open a position" panel route through here so every order counts toward
+ * our builder code.
+ */
+export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<HedgeResult> {
   const builderConfig = new BuilderConfig({
     remoteBuilderConfig: { url: `${window.location.origin}/api/builder/sign` },
   });
@@ -57,7 +68,7 @@ export async function placeHedgeFromBrowser(args: PlaceHedgeArgs): Promise<Hedge
       tokenID: args.tokenID,
       price: args.price,
       size: args.size,
-      side: Side.BUY,
+      side: args.side === "SELL" ? Side.SELL : Side.BUY,
     });
     const res = await client.postOrder(signed, OrderType.GTC);
 
@@ -77,6 +88,11 @@ export async function placeHedgeFromBrowser(args: PlaceHedgeArgs): Promise<Hedge
     const message = err instanceof Error ? err.message : String(err);
     return { ok: false, geoblocked: isGeoblock(message), message };
   }
+}
+
+/** Hedge button entry point — places the opposite-side BUY. */
+export function placeHedgeFromBrowser(args: PlaceOrderArgs): Promise<HedgeResult> {
+  return placeOrderFromBrowser({ ...args, side: "BUY" });
 }
 
 function isGeoblock(message: string): boolean {
