@@ -45,6 +45,7 @@ type State =
   | {
       status: "loaded";
       address: string;
+      kind: string;
       positions: Position[];
       suggestions: HedgeSuggestion[];
       portfolio: PortfolioInsight;
@@ -98,12 +99,13 @@ export default function Home() {
       if (!res.ok) throw new Error(json.error ?? "Failed to load");
       setState({
         status: "loaded",
-        address: addr,
+        address: json.address,
+        kind: json.kind,
         positions: json.positions,
         suggestions: json.suggestions,
         portfolio: json.portfolio,
       });
-      if (json.positions.length > 0) loadAdvice(addr);
+      if (json.positions.length > 0) loadAdvice(json.address);
     } catch (err) {
       setState({ status: "error", message: err instanceof Error ? err.message : String(err) });
     }
@@ -208,6 +210,16 @@ export default function Home() {
       {/* Results */}
       {state.status === "loaded" && (
         <section className="space-y-6 pb-20">
+          {(state.kind === "safe" || state.kind === "proxy") && (
+            <p className="text-sm text-zinc-500">
+              Showing your Polymarket wallet{" "}
+              <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                {state.address.slice(0, 6)}…{state.address.slice(-4)}
+              </span>{" "}
+              (derived from your connected wallet).
+            </p>
+          )}
+
           <AdvicePanel advice={advice} />
 
           <div className="grid grid-cols-3 gap-3">
@@ -228,7 +240,8 @@ export default function Home() {
             <div className="rounded-2xl border border-dashed border-black/10 bg-white py-16 text-center dark:border-white/10 dark:bg-zinc-900">
               <p className="text-base font-medium">No open positions</p>
               <p className="mt-1 text-sm text-zinc-500">
-                This address has nothing to hedge right now.
+                Nothing to hedge for this wallet. If you trade on Polymarket, paste your
+                Polymarket profile address above.
               </p>
             </div>
           ) : (

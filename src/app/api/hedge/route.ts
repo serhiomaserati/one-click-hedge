@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getPositions } from "@/lib/polymarket/positions";
 import { buildHedgeSuggestions, analyzePortfolio } from "@/lib/polymarket/hedge";
+import { resolveWithPositions } from "@/lib/polymarket/resolve";
 
 /**
  * GET /api/hedge?address=0x...
@@ -17,11 +17,13 @@ export async function GET(req: Request) {
   }
 
   try {
-    const positions = await getPositions(address);
+    const { address: resolved, kind, positions } = await resolveWithPositions(address);
     const suggestions = await buildHedgeSuggestions(positions);
     const portfolio = analyzePortfolio(positions);
     return NextResponse.json({
-      address,
+      address: resolved,
+      requested: address,
+      kind,
       count: positions.length,
       positions,
       suggestions,
