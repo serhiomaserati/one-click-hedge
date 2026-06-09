@@ -278,6 +278,7 @@ interface ResolvedMarket {
   slug: string;
   image: string;
   acceptingOrders: boolean;
+  isEvent: boolean;
   tokens: MarketToken[];
 }
 
@@ -369,6 +370,13 @@ function OpenPositionPanel() {
         </div>
         {err && <p className="mt-2 text-sm font-medium text-red-600">{err}</p>}
 
+        {market && !token && (
+          <p className="mt-4 text-sm font-medium text-amber-600">
+            This market isn’t accepting orders right now (it may be closed or resolved).
+            Try an active market.
+          </p>
+        )}
+
         {market && token && (
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-3">
@@ -394,6 +402,12 @@ function OpenPositionPanel() {
                 </button>
               ))}
             </div>
+            {market.isEvent && (
+              <p className="-mt-2 text-xs text-zinc-500">
+                Multi-outcome event — buying <span className="font-medium">Yes</span> on the
+                selected outcome.
+              </p>
+            )}
 
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-sm">
