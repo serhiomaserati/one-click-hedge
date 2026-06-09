@@ -56,6 +56,7 @@ type State =
       status: "loaded";
       address: string;
       kind: string;
+      cash: number;
       positions: Position[];
       suggestions: HedgeSuggestion[];
       portfolio: PortfolioInsight;
@@ -155,6 +156,7 @@ export default function Home() {
         status: "loaded",
         address: json.address,
         kind: json.kind,
+        cash: json.cash ?? 0,
         positions: json.positions,
         suggestions: json.suggestions,
         portfolio: json.portfolio,
@@ -373,7 +375,8 @@ export default function Home() {
 
           <AdvicePanel advice={advice} />
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Cash · pUSD" value={usd(state.cash)} />
             <Stat label="Portfolio value" value={usd(totalValue)} />
             <Stat
               label="Lockable now"
