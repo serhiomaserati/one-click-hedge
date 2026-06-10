@@ -14,12 +14,12 @@ export default function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#ffffff",
+          background: "#09090b",
           padding: "84px",
         }}
       >
         {/* wordmark */}
-        <div style={{ display: "flex", alignItems: "center", fontSize: 30, color: "#52525b" }}>
+        <div style={{ display: "flex", alignItems: "center", fontSize: 30, color: "#a1a1aa" }}>
           <div
             style={{
               width: 16,
@@ -34,7 +34,7 @@ export default function Image() {
 
         {/* headline */}
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 38, color: "#71717a", marginBottom: 18 }}>
+          <div style={{ display: "flex", fontSize: 38, color: "#a1a1aa", marginBottom: 18 }}>
             AI risk co-pilot for Polymarket
           </div>
           <div
@@ -43,7 +43,7 @@ export default function Image() {
               flexDirection: "column",
               fontSize: 88,
               fontWeight: 700,
-              color: "#18181b",
+              color: "#fafafa",
               lineHeight: 1.05,
               letterSpacing: "-3px",
             }}
@@ -57,7 +57,7 @@ export default function Image() {
         </div>
 
         {/* footer line */}
-        <div style={{ display: "flex", fontSize: 28, color: "#71717a" }}>
+        <div style={{ display: "flex", fontSize: 28, color: "#a1a1aa" }}>
           Hedge or take profit in one click — at live order-book prices.
         </div>
       </div>
