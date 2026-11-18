@@ -18,7 +18,7 @@
 }
 
 body {
-  /* Use the loaded Geist font — not Arial. */
+  /* Use the loaded Geist font - not Arial. */
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }

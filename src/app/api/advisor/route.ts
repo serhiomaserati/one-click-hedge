@@ -5,7 +5,7 @@ import { getPortfolioAdvice, isAdvisorEnabled } from "@/lib/ai/advisor";
 
 /**
  * GET /api/advisor?address=0x...
- * Returns a Claude-generated risk read for the address's portfolio.
+ * Returns an AI-generated risk read for the address's portfolio.
  * If ANTHROPIC_API_KEY is unset, responds { enabled: false } and the UI hides the panel.
  */
 export async function GET(req: Request) {

@@ -60,7 +60,7 @@ for (const t of trades) {
 }
 
 if (!chosen) {
-  console.log("No suitable liquid market found right now — try again later.");
+  console.log("No suitable liquid market found right now - try again later.");
   process.exit(1);
 }
 
@@ -77,7 +77,7 @@ console.log("Outcome:", token.outcome, "| best bid", maxBid, "best ask", minAsk)
 console.log(`Test BUY: ${size} @ ${price}  (notional ~$${(size * price).toFixed(2)}, fee ${feeBps}bps)`);
 console.log("This price is below best bid → cannot fill.\n");
 
-// feeRateBps omitted — the SDK resolves the market's protocol fee; the builder
+// feeRateBps omitted - the SDK resolves the market's protocol fee; the builder
 // fee is applied separately via the builder headers (builderConfig).
 const signed = await client.createOrder({
   tokenID, price, size, side: Side.BUY,
@@ -91,5 +91,5 @@ if (orderID) {
   console.log("cancelOrder →", JSON.stringify(c));
   console.log("\n✓ Pipeline works: order signed, accepted with builder attribution, and cancelled. No money moved.");
 } else {
-  console.log("\nNo orderID returned — inspect the postOrder response above.");
+  console.log("\nNo orderID returned - inspect the postOrder response above.");
 }

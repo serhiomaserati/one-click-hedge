@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Builder — HedgeHub",
+  title: "Builder - HedgeHub",
   description:
     "How HedgeHub attributes volume to its Polymarket builder code on CLOB V2.",
 };
@@ -20,8 +20,8 @@ export default function BuilderPage() {
         Built on Polymarket CLOB V2
       </h1>
       <p className="mt-5 text-lg leading-8 text-zinc-500 dark:text-zinc-400">
-        Every order placed through HedgeHub — a buy, a hedge, or a
-        take-profit — is attributed on-chain to our builder code. Attribution is{" "}
+        Every order placed through HedgeHub - a buy, a hedge, or a
+        take-profit - is attributed on-chain to our builder code. Attribution is{" "}
         <span className="font-medium text-zinc-700 dark:text-zinc-300">native to V2</span>:
         the code is written directly into the order’s <code>builder</code> field, no
         custody and no smart contract.
@@ -45,7 +45,7 @@ export default function BuilderPage() {
           <p className="font-medium text-zinc-900 dark:text-zinc-100">How fees work</p>
           <p className="mt-1">
             The builder taker fee is set in our Polymarket Builder Profile and routes to
-            us automatically on attributed volume — no extra cost to the user beyond the
+            us automatically on attributed volume - no extra cost to the user beyond the
             standard taker fee.
           </p>
         </div>
@@ -53,7 +53,7 @@ export default function BuilderPage() {
           <p className="font-medium text-zinc-900 dark:text-zinc-100">Non-custodial</p>
           <p className="mt-1">
             Orders are signed by the user’s own wallet in their browser. We never hold
-            keys or funds — we’re a decision layer on top of Polymarket, not a custodian.
+            keys or funds - we’re a decision layer on top of Polymarket, not a custodian.
           </p>
         </div>
       </div>

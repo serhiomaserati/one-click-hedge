@@ -1,5 +1,5 @@
 /**
- * Read a wallet's Polymarket cash balance — SERVER-SIDE ONLY.
+ * Read a wallet's Polymarket cash balance - SERVER-SIDE ONLY.
  *
  * On CLOB V2 the collateral is pUSD (Polymarket USD), an ERC-20 held by the
  * user's proxy / deposit wallet. We read balanceOf() on Polygon via viem.

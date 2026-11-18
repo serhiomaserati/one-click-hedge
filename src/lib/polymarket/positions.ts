@@ -27,9 +27,9 @@ export interface Position {
   /** e.g. "Yes" / "No". */
   outcome: string;
   outcomeIndex: number;
-  /** The other side of this market — the natural hedge target. */
+  /** The other side of this market - the natural hedge target. */
   oppositeOutcome: string;
-  /** tokenId of the opposing outcome — used directly when placing a hedge. */
+  /** tokenId of the opposing outcome - used directly when placing a hedge. */
   oppositeAsset: string;
 }
 
@@ -43,7 +43,7 @@ export async function getPositions(
   url.searchParams.set("sizeThreshold", String(opts?.sizeThreshold ?? 1));
   url.searchParams.set("sortBy", "CURRENT");
   url.searchParams.set("sortDirection", "DESC");
-  // Data API defaults to 100 — raise it so heavy traders aren't silently truncated.
+  // Data API defaults to 100 - raise it so heavy traders aren't silently truncated.
   url.searchParams.set("limit", "500");
 
   const res = await fetch(url, {

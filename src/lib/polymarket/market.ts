@@ -1,5 +1,5 @@
 /**
- * Market lookup — SERVER-SIDE ONLY.
+ * Market lookup - SERVER-SIDE ONLY.
  *
  * Resolves a Polymarket market from a URL or slug (via the public Gamma API)
  * into its two outcome tokens, each priced with the live order-book ask so the
@@ -63,7 +63,7 @@ async function livePrice(tokenId: string, gammaPrice: number): Promise<{ price: 
     const px = Number(raw);
     if (Number.isFinite(px) && px > 0 && px < 1) return { price: px, live: true };
   } catch {
-    // ignore — fall back to the Gamma price
+    // ignore - fall back to the Gamma price
   }
   const fb = Math.min(Math.max(gammaPrice, 0.001), 0.999);
   return { price: fb, live: false };
@@ -138,7 +138,7 @@ export async function resolveMarket(query: string): Promise<ResolvedMarket | nul
   const slug = extractSlug(query);
   if (!slug) return null;
 
-  // A slug can be a single market or a multi-outcome event — try both.
+  // A slug can be a single market or a multi-outcome event - try both.
   const markets = await gamma(`/markets?slug=${encodeURIComponent(slug)}`);
   if (markets[0]) return resolveBinary(markets[0], slug);
 

@@ -3,7 +3,7 @@
  *
  * The simplest, always-available hedge for a binary Polymarket position is to
  * buy the OTHER outcome of the same market. If you hold `size` shares of "Yes"
- * and buy `size` shares of "No", exactly one side pays $1 at resolution — so you
+ * and buy `size` shares of "No", exactly one side pays $1 at resolution - so you
  * lock in `size` dollars no matter what. This neutralizes directional risk.
  *
  * We price the hedge from the live order book (cost to BUY the opposite outcome)
@@ -50,7 +50,7 @@ export interface PortfolioInsight {
   topEvent?: {
     title: string;
     value: number;
-    /** Share of total portfolio value (0–1). */
+    /** Share of total portfolio value (0-1). */
     share: number;
     positions: number;
   };
@@ -103,7 +103,7 @@ async function getHedgePrice(tokenId: string, curPrice: number): Promise<{ price
     const px = Number(raw);
     if (Number.isFinite(px) && px > 0 && px < 1) return { price: px, live: true };
   } catch {
-    // ignore — use fallback
+    // ignore - use fallback
   }
   return { price: fallback, live: false };
 }
@@ -120,7 +120,7 @@ export async function buildHedgeSuggestions(positions: Position[]): Promise<Hedg
         const hedgeCost = hedgeSize * price;
         const lockedValue = hedgeSize; // one side pays $1 per share at resolution
         // Dollars in = initialValue (= size × avgPrice). NOTE: totalBought is a
-        // SHARE count, not dollars — do not use it here.
+        // SHARE count, not dollars - do not use it here.
         const lockedPnl = lockedValue - (p.initialValue + hedgeCost);
         return {
           position: p,

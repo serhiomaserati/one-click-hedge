@@ -4,7 +4,7 @@ import { POLYMARKET } from "@/lib/polymarket/config";
 
 /**
  * Health check: proves we can reach the Polymarket CLOB V2 API.
- * No credentials required — just pings getOk() and getServerTime().
+ * No credentials required - just pings getOk() and getServerTime().
  */
 export async function GET() {
   try {

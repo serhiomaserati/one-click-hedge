@@ -1,6 +1,6 @@
 // Stage 3 setup: approve the Polymarket exchange contracts to move the wallet's
 // USDC.e (collateral) and CTF outcome tokens. One-time, on-chain, ~cents of gas.
-// Does NOT place orders or move funds — only sets allowances.
+// Does NOT place orders or move funds - only sets allowances.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { ethers } from "ethers";

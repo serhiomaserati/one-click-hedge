@@ -1,9 +1,9 @@
 /**
- * ClobClient factory — SERVER-SIDE ONLY (CLOB V2).
+ * ClobClient factory - SERVER-SIDE ONLY (CLOB V2).
  *
  * Only the read-only client lives here (no credentials needed): markets, order
  * books, prices, health. Order placement happens CLIENT-SIDE in the browser
- * with the user's own wallet — see src/lib/polymarket/client-order.ts.
+ * with the user's own wallet - see src/lib/polymarket/client-order.ts.
  */
 import { ClobClient } from "@polymarket/clob-client-v2";
 import { POLYMARKET } from "./config";

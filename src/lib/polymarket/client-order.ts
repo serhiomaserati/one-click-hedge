@@ -1,11 +1,11 @@
 /**
- * CLIENT-SIDE order placement (browser only) — CLOB V2.
+ * CLIENT-SIDE order placement (browser only) - CLOB V2.
  *
  * The user's own wagmi wallet signs and submits the order directly to Polymarket,
  * so the geoblock applies to the user's IP (the correct, ToS-compliant model).
  *
  * On V2 builder attribution is NATIVE: the public `builderCode` (bytes32) goes
- * straight into the order's `builder` field — no remote signer, no secret. So
+ * straight into the order's `builder` field - no remote signer, no secret. So
  * this runs entirely in the browser.
  */
 import {
@@ -29,7 +29,7 @@ export interface PlaceOrderArgs {
   /** The EOA that signs (the connected wallet). */
   address: `0x${string}`;
   /**
-   * The maker/funder address — the Polymarket wallet that holds the collateral
+   * The maker/funder address - the Polymarket wallet that holds the collateral
    * (Gnosis Safe / proxy / deposit wallet). Polymarket rejects raw-EOA makers,
    * so this must be the user's proxy. Defaults to `address` only as a fallback.
    */
@@ -44,7 +44,7 @@ export interface PlaceOrderArgs {
   side?: "BUY" | "SELL";
 }
 
-/** @deprecated use PlaceOrderArgs — kept for the hedge call sites. */
+/** @deprecated use PlaceOrderArgs - kept for the hedge call sites. */
 export type PlaceHedgeArgs = PlaceOrderArgs;
 
 export type HedgeResult =
@@ -116,7 +116,7 @@ export async function placeOrderFromBrowser(args: PlaceOrderArgs): Promise<Hedge
   }
 }
 
-/** Hedge button entry point — places the opposite-side BUY. */
+/** Hedge button entry point - places the opposite-side BUY. */
 export function placeHedgeFromBrowser(args: PlaceOrderArgs): Promise<HedgeResult> {
   return placeOrderFromBrowser({ ...args, side: "BUY" });
 }

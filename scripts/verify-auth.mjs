@@ -21,7 +21,7 @@ const account = privateKeyToAccount(pk);
 const signer = createWalletClient({ account, chain: polygon, transport: http(RPC) });
 console.log("Trader EOA:", account.address);
 
-// 1. Derive L2 creds (signature only — proves wallet auth against Polymarket).
+// 1. Derive L2 creds (signature only - proves wallet auth against Polymarket).
 const bootstrap = new ClobClient(host, Chain.POLYGON, signer);
 let creds;
 try {

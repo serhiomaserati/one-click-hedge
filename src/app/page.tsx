@@ -84,7 +84,7 @@ function usd(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-// A real Polymarket wallet with live positions — powers the "Try a demo" button
+// A real Polymarket wallet with live positions - powers the "Try a demo" button
 // so anyone (e.g. a grant reviewer) can see the product work without funds.
 const DEMO_ADDRESS = "0xce25e214d5cfe4f459cf67f08df581885aae7fdc";
 
@@ -167,7 +167,7 @@ export default function Home() {
         if (j.fundedKind === "eoa") {
           return setTradeId({ funder: j.funded, signatureType: SignatureTypeV2.EOA });
         }
-        // No positions yet — best-effort guess by wallet type.
+        // No positions yet - best-effort guess by wallet type.
         setTradeId(
           isEmbedded
             ? { funder: j.proxy, signatureType: SignatureTypeV2.POLY_PROXY }
@@ -283,7 +283,7 @@ export default function Home() {
         notifiedRef.current.add(s.position.asset);
         try {
           new Notification("Time to hedge 🟢", {
-            body: `${s.position.title} — lock in +${usd(s.lockedPnl)} now`,
+            body: `${s.position.title} - lock in +${usd(s.lockedPnl)} now`,
           });
         } catch {
           /* ignore */
@@ -309,7 +309,7 @@ export default function Home() {
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-500 dark:text-zinc-400">
             We read your whole book, price the other side of every position live, and
-            show you exactly what a hedge locks in — one click, no math, no waiting for
+            show you exactly what a hedge locks in - one click, no math, no waiting for
             the market to resolve.
           </p>
 
@@ -377,7 +377,7 @@ export default function Home() {
               <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
                 {[
                   ["01", "Connect", "We load your Polymarket positions automatically."],
-                  ["02", "See the lock-in", "Every position priced against its live opposite — with your guaranteed P/L."],
+                  ["02", "See the lock-in", "Every position priced against its live opposite - with your guaranteed P/L."],
                   ["03", "Hedge in one click", "Slide how much to hedge and lock it in. No math, no waiting."],
                 ].map(([n, t, d]) => (
                   <div key={n}>
@@ -393,7 +393,7 @@ export default function Home() {
                   Why hedge?
                 </span>{" "}
                 You bought a team at 67¢; it climbed to 88¢. Rather than risk a comeback,
-                you buy the other side for 12¢ — locking in{" "}
+                you buy the other side for 12¢ - locking in{" "}
                 <span className="font-medium text-emerald-600">+31%</span> no matter who
                 wins. We spot these moments across your whole book for you.
               </p>
@@ -402,7 +402,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Open a position — buy through our builder code */}
+      {/* Open a position - buy through our builder code */}
       <OpenPositionPanel tradeId={tradeId} />
 
       {/* Loading skeleton */}
@@ -433,7 +433,7 @@ export default function Home() {
           {ripe.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/30">
               <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                🔔 {ripe.length} position{ripe.length === 1 ? "" : "s"} ready to hedge — lock in{" "}
+                🔔 {ripe.length} position{ripe.length === 1 ? "" : "s"} ready to hedge - lock in{" "}
                 <span className="font-semibold">+{usd(totalLockable)}</span> total right now.
               </p>
               {notify ? (
@@ -597,7 +597,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
           </span>
         </div>
         <p className="mt-1 text-sm text-zinc-500">
-          Buy into any market right here — then hedge or take profit in the same place,
+          Buy into any market right here - then hedge or take profit in the same place,
           at live order-book prices.
         </p>
 
@@ -654,7 +654,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
             </div>
             {market.isEvent && (
               <p className="-mt-2 text-xs text-zinc-500">
-                Multi-outcome event — buying <span className="font-medium">Yes</span> on the
+                Multi-outcome event - buying <span className="font-medium">Yes</span> on the
                 selected outcome.
               </p>
             )}
@@ -709,7 +709,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
                     : shares <= 0
                       ? "Enter an amount in USDC."
                       : shares < MIN_SHARES
-                        ? `Minimum order is ${MIN_SHARES} shares — increase to ~${usd(minCost)}.`
+                        ? `Minimum order is ${MIN_SHARES} shares - increase to ~${usd(minCost)}.`
                         : "";
               return (
                 <>
@@ -735,7 +735,7 @@ function OpenPositionPanel({ tradeId }: { tradeId: TradeIdentity | null }) {
   );
 }
 
-/** Pulsing "Live · updated Ns ago" badge — proves prices auto-refresh. */
+/** Pulsing "Live · updated Ns ago" badge - proves prices auto-refresh. */
 function LiveBadge({ lastUpdated }: { lastUpdated: number }) {
   const [now, setNow] = useState<number>(() => lastUpdated || 0);
   useEffect(() => {
@@ -775,7 +775,7 @@ function AdvicePanel({ advice }: { advice: AdviceState }) {
           AI
         </span>
         <h2 className="text-sm font-semibold text-violet-700 dark:text-violet-300">
-          Claude risk analysis
+          AI risk analysis
         </h2>
         {advice.status === "loading" && (
           <span className="ml-auto text-xs text-violet-500">Analyzing…</span>
@@ -792,13 +792,13 @@ function AdvicePanel({ advice }: { advice: AdviceState }) {
 
       {advice.status === "off" && (
         <p className="text-sm text-zinc-500">
-          AI analysis is taking a short break — your hedge numbers below are live and
+          AI analysis is taking a short break - your hedge numbers below are live and
           unaffected.
         </p>
       )}
 
       {advice.status === "error" && (
-        <p className="text-sm text-red-600">AI advisor error — {advice.message}</p>
+        <p className="text-sm text-red-600">AI advisor error - {advice.message}</p>
       )}
 
       {advice.status === "done" && (
@@ -887,7 +887,7 @@ function PortfolioCard({ p }: { p: PortfolioInsight }) {
           If <span className="font-medium">{p.topEvent.title}</span> resolves against you,
           you’d lose{" "}
           <span className="font-semibold text-amber-600">{usd(p.topEvent.value)}</span>
-          {p.topEvent.share > 0.5 ? " — over half your book. Worth hedging." : "."}
+          {p.topEvent.share > 0.5 ? " - over half your book. Worth hedging." : "."}
         </p>
       )}
     </div>
@@ -1099,8 +1099,8 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
           {tooSmall ? (
             <p className="mt-3 text-sm text-amber-600">
               {S < 5
-                ? "Position too small to hedge — Polymarket’s minimum order is 5 shares."
-                : "Below the 5-share minimum — drag the hedge amount up."}
+                ? "Position too small to hedge - Polymarket’s minimum order is 5 shares."
+                : "Below the 5-share minimum - drag the hedge amount up."}
             </p>
           ) : (
             <div
@@ -1111,10 +1111,10 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
               }`}
             >
               {s.worthHedging
-                ? `✓ Good time to hedge — a full hedge locks in +${usd(s.lockedPnl)} (+${(
+                ? `✓ Good time to hedge - a full hedge locks in +${usd(s.lockedPnl)} (+${(
                     s.lockedPnlPct * 100
                   ).toFixed(1)}%), whoever wins.`
-                : `Not ripe yet — a full hedge would lock in ${usd(s.lockedPnl)} (${(
+                : `Not ripe yet - a full hedge would lock in ${usd(s.lockedPnl)} (${(
                     s.lockedPnlPct * 100
                   ).toFixed(1)}%). Hold, or hedge to cap risk.`}
             </div>
@@ -1124,14 +1124,14 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
 
       {order.status === "idle" && s.alreadyHedged && (
         <p className="mt-4 border-t border-black/5 pt-4 text-sm text-emerald-600 dark:border-white/5">
-          ✓ This market is already hedged — you hold both sides.
+          ✓ This market is already hedged - you hold both sides.
         </p>
       )}
 
       {order.status === "done" && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-medium text-emerald-600">
-            ✓ Hedge placed — locked in {worstPnl >= 0 ? "+" : ""}
+            ✓ Hedge placed - locked in {worstPnl >= 0 ? "+" : ""}
             {usd(worstPnl)}{order.orderID ? ` (${order.orderID.slice(0, 8)}…)` : ""}.
           </p>
           <ShareButton
@@ -1143,21 +1143,21 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       )}
       {order.status === "geoblocked" && (
         <p className="mt-3 text-sm font-medium text-amber-600">
-          Trading isn’t available in your region — Polymarket restricts this by location.
+          Trading isn’t available in your region - Polymarket restricts this by location.
         </p>
       )}
       {order.status === "unsupported" && (
         <p className="mt-3 text-sm font-medium text-amber-600">{DEPOSIT_WALLET_NOTE}</p>
       )}
       {order.status === "error" && (
-        <p className="mt-3 text-sm font-medium text-red-600">Order failed — {order.message}</p>
+        <p className="mt-3 text-sm font-medium text-red-600">Order failed - {order.message}</p>
       )}
 
       {/* Take profit: exit the position entirely instead of hedging it. */}
       {order.status === "idle" && !sellTooSmall && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-3 text-sm dark:border-white/5">
           <span className="text-zinc-500">
-            Or exit now — sell {Math.round(p.size)} {p.outcome} for ~{usd(sellProceeds)} (
+            Or exit now - sell {Math.round(p.size)} {p.outcome} for ~{usd(sellProceeds)} (
             <span className={sellRealized >= 0 ? "text-emerald-600" : "text-red-600"}>
               {sellRealized >= 0 ? "+" : ""}
               {usd(sellRealized)}
@@ -1182,11 +1182,11 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       {sellOrder.status === "done" && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-medium text-emerald-600">
-            ✓ Sold — realized {sellRealized >= 0 ? "+" : ""}
+            ✓ Sold - realized {sellRealized >= 0 ? "+" : ""}
             {usd(sellRealized)}{sellOrder.orderID ? ` (${sellOrder.orderID.slice(0, 8)}…)` : ""}.
           </p>
           <ShareButton
-            text={`Just took profit on a Polymarket position with HedgeHub — ${
+            text={`Just took profit on a Polymarket position with HedgeHub - ${
               sellRealized >= 0 ? "+" : ""
             }${usd(sellRealized)} realized 🔒`}
           />
@@ -1194,14 +1194,14 @@ function HedgeCard({ s, tradeId }: { s: HedgeSuggestion; tradeId: TradeIdentity 
       )}
       {sellOrder.status === "geoblocked" && (
         <p className="mt-2 text-sm font-medium text-amber-600">
-          Trading isn’t available in your region — Polymarket restricts this by location.
+          Trading isn’t available in your region - Polymarket restricts this by location.
         </p>
       )}
       {sellOrder.status === "unsupported" && (
         <p className="mt-2 text-sm font-medium text-amber-600">{DEPOSIT_WALLET_NOTE}</p>
       )}
       {sellOrder.status === "error" && (
-        <p className="mt-2 text-sm font-medium text-red-600">Sell failed — {sellOrder.message}</p>
+        <p className="mt-2 text-sm font-medium text-red-600">Sell failed - {sellOrder.message}</p>
       )}
     </div>
   );

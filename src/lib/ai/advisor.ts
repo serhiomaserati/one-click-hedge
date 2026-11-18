@@ -1,16 +1,16 @@
 /**
- * AI risk advisor (Stage AI) — SERVER-SIDE ONLY.
+ * AI risk advisor (Stage AI) - SERVER-SIDE ONLY.
  *
- * Sends the user's positions + computed hedges to Claude and gets back a plain-
+ * Sends the user's positions + computed hedges to the model and gets back a plain-
  * language risk read plus a ranking of which hedges matter most. Degrades
  * gracefully: if ANTHROPIC_API_KEY is unset, returns null and the UI hides the
- * panel — nothing else breaks.
+ * panel - nothing else breaks.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { Position } from "../polymarket/positions";
 import type { HedgeSuggestion } from "../polymarket/hedge";
 
-/** Claude model — most capable. Switch to claude-sonnet-4-6 / claude-haiku-4-5 to cut cost. */
+/** Model used for the risk read. */
 const MODEL = "claude-opus-4-8";
 
 export interface PortfolioAdvice {

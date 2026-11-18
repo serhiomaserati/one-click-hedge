@@ -1,6 +1,6 @@
 /**
  * Resolve a connected wallet to the address that actually holds Polymarket
- * positions — SERVER-SIDE ONLY.
+ * positions - SERVER-SIDE ONLY.
  *
  * Polymarket users sign with their EOA but their funds and positions live under
  * a proxy: a Gnosis Safe for browser-wallet (MetaMask) users, or an EIP-1167

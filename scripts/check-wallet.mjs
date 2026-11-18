@@ -1,5 +1,5 @@
 // One-off: derive the wallet address from .env.local and check Polygon balances.
-// Prints ONLY the address + balances — never the private key.
+// Prints ONLY the address + balances - never the private key.
 import { readFileSync } from "node:fs";
 import { ethers } from "ethers";
 
@@ -32,7 +32,7 @@ for (const url of RPCS) {
   }
 }
 if (!provider) {
-  console.log("No working public RPC right now — key is valid, skip balance check.");
+  console.log("No working public RPC right now - key is valid, skip balance check.");
   process.exit(0);
 }
 const erc20 = ["function balanceOf(address) view returns (uint256)"];
